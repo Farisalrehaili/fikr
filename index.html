@@ -494,10 +494,10 @@ table.tbl tr:hover td{background:var(--card-2)}
 
   function seed(){
     const db = {
-      seqs:{users:0,questions:0,files:0,lessons:0,results:0,topic_names:0,flashcards:0,summaries:0,reports:0},
+      seqs:{users:0,questions:0,files:0,lessons:0,results:0,topic_names:0,flashcards:0,summaries:0,reports:0,notifications:0},
       users:[], questions:[], files:[], lessons:[], results:[], progress:[], mistakes:[],
       favorites:[], notes:[], topic_names:[], points_log:[], activity_log:[], daily_answers:[],
-      flashcards:[], summaries:[], reports:[], ratings:[], sessions:{}, settings:{}
+      flashcards:[], summaries:[], reports:[], ratings:[], notifications:[], sessions:{}, settings:{}
     };
     const addU = (name,email,password,role,extra={}) => { const id=++db.seqs.users; db.users.push(Object.assign({id,name,email,password,role,xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:''},extra)); return id; };
     addU('مدير المنصة','admin@tahsili.sa','admin123','admin');
@@ -513,7 +513,7 @@ table.tbl tr:hover td{background:var(--card-2)}
           for(let i=1;i<=2;i++){ const id=++db.seqs.lessons; db.lessons.push({id,section,subject:s,grade:g,title:`${s} ${g} — الدرس ${i}`,video_url:'',ord:i,created_at:now()}); }
     return db;
   }
-  function load(){ try{ const r=localStorage.getItem(LS_KEY); if(r) return JSON.parse(r); }catch(e){} const d=seed(); save(d); return d; }
+  function load(){ try{ const r=localStorage.getItem(LS_KEY); if(r){ const d=JSON.parse(r); d.notifications=d.notifications||[]; d.seqs=d.seqs||{}; if(d.seqs.notifications==null)d.seqs.notifications=0; return d; } }catch(e){} const d=seed(); save(d); return d; }
   function save(db){ try{ localStorage.setItem(LS_KEY, JSON.stringify(db)); }catch(e){ console.warn('تعذّر الحفظ (مساحة ممتلئة):', e.message); } }
   let DB = load();
   const persist = ()=>save(DB);
@@ -565,6 +565,11 @@ table.tbl tr:hover td{background:var(--card-2)}
     if(method==='POST'&&path==='/profile'){ need(); let {name,email,phone,country,city,school,region}=body; email=(email||'').trim().toLowerCase(); name=(name||'').trim(); if(!name||!email) return err('الاسم والبريد مطلوبان'); if(DB.users.some(x=>x.email===email&&x.id!==u.id)) return err('البريد مستخدم من حساب آخر'); Object.assign(u,{name,email,phone:phone||'',country:country||'',city:city||'',school:school||'',region:region||''}); persist(); return J({ok:true,user:{id:u.id,name,email,role:u.role,phone:u.phone,country:u.country,city:u.city,school:u.school,region:u.region}}); }
     if(method==='POST'&&path==='/change-password'){ need(); const {oldPassword,newPassword}=body; if((oldPassword||'')!==u.password) return err('كلمة المرور الحالية غير صحيحة'); if(!newPassword||newPassword.length<6) return err('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'); u.password=newPassword; persist(); return J({ok:true}); }
 
+    // ---- الإشعارات ----
+    if(method==='GET'&&path==='/notifications'){ need(); return J(DB.notifications.slice().sort((a,b)=>b.id-a.id).slice(0,50)); }
+    if(method==='POST'&&path==='/notifications'){ admin(); const {title,body:bd}=body; if(!title||!title.trim()) return err('اكتب عنوان الإشعار'); const id=++DB.seqs.notifications; DB.notifications.push({id,title:title.trim(),body:(bd||'').trim(),created_at:now()}); logAct(u,'أضاف إشعاراً'); persist(); return J({id}); }
+    if(method==='DELETE'&&m(/^\/notifications\/(\d+)$/)){ admin(); const id=+m(/^\/notifications\/(\d+)$/)[1]; DB.notifications=DB.notifications.filter(n=>n.id!==id); persist(); return J({ok:true}); }
+
     // ---- الأسئلة ----
     if(method==='GET'&&path==='/questions'){
       let r=DB.questions.slice();
@@ -598,6 +603,7 @@ table.tbl tr:hover td{background:var(--card-2)}
     if(method==='POST'&&path==='/questions/clear'){ admin(); const n=DB.questions.length; DB.questions=[]; DB.topic_names=[]; persist(); return J({deleted:n}); }
     if(method==='POST'&&(m(/^\/questions\/(\d+)\/rate$/))){ need(); const id=+m(/^\/questions\/(\d+)\/rate$/)[1]; const {difficulty}=body; const ex=DB.ratings.find(r=>r.user_id===u.id&&r.question_id===id); if(ex)ex.difficulty=difficulty; else DB.ratings.push({user_id:u.id,question_id:id,difficulty}); const rs=DB.ratings.filter(r=>r.question_id===id); persist(); return J({avg:Math.round(rs.reduce((a,r)=>a+r.difficulty,0)/rs.length*10)/10,count:rs.length}); }
     if(method==='DELETE'&&m(/^\/questions\/(\d+)$/)){ admin(); const id=+m(/^\/questions\/(\d+)$/)[1]; DB.questions=DB.questions.filter(q=>q.id!==id); persist(); return J({ok:true}); }
+    if(method==='PUT'&&m(/^\/questions\/(\d+)$/)){ adminOrT(); const id=+m(/^\/questions\/(\d+)$/)[1]; const q=DB.questions.find(x=>x.id===id); if(!q) return err('غير موجود',404); const {text,options,answer,subject,year,level,explanation,topic,grade,chapter,type,image_url,opt_images}=body; if((!text&&!image_url)||!options||answer==null||!subject) return err('بيانات ناقصة'); Object.assign(q,{text:text||'',options,answer,subject,year:year||'',level:level||'متوسط',explanation:explanation||'',topic:topic||'',grade:grade||'',chapter:chapter||'',type:type||'mcq',image_url:image_url||'',opt_images:opt_images||[]}); saveTopic(topic,subject,grade); persist(); return J({ok:true,id}); }
     if(method==='POST'&&path==='/qimage'){ adminOrT(); const {dataB64}=body; if(!dataB64) return err('لا صورة'); return J({url:dataB64}); }
 
     // ---- أسماء الدروس ----
@@ -610,6 +616,7 @@ table.tbl tr:hover td{background:var(--card-2)}
     if(method==='GET'&&path==='/lessons'){ let r=DB.lessons.slice(); ['section','subject','grade'].forEach(k=>{if(query[k])r=r.filter(x=>x[k]===query[k]);}); r.sort((a,b)=>(a.ord-b.ord)||(a.id-b.id)); return J(r); }
     if(method==='POST'&&path==='/lessons'){ admin(); const {section,subject,grade,title,video_url}=body; if(!section||!subject||!grade||!title) return err('بيانات ناقصة'); const ord=DB.lessons.filter(l=>l.section===section&&l.subject===subject&&l.grade===grade).length+1; const id=++DB.seqs.lessons; DB.lessons.push({id,section,subject,grade,title,video_url:video_url||'',ord,created_at:now()}); persist(); return J({id}); }
     if(method==='DELETE'&&m(/^\/lessons\/(\d+)$/)){ admin(); const id=+m(/^\/lessons\/(\d+)$/)[1]; DB.lessons=DB.lessons.filter(l=>l.id!==id); persist(); return J({ok:true}); }
+    if(method==='PUT'&&m(/^\/lessons\/(\d+)$/)){ admin(); const id=+m(/^\/lessons\/(\d+)$/)[1]; const l=DB.lessons.find(x=>x.id===id); if(!l) return err('غير موجود',404); const {section,subject,grade,title,video_url}=body; if(!section||!subject||!grade||!title) return err('بيانات ناقصة'); Object.assign(l,{section,subject,grade,title,video_url:video_url||''}); persist(); return J({ok:true,id}); }
 
     // ---- الملفات ----
     if(method==='GET'&&path==='/files'){ return J(DB.files.slice().sort((a,b)=>b.id-a.id)); }
@@ -818,7 +825,13 @@ table.tbl tr:hover td{background:var(--card-2)}
       </div>
       <div class="spacer"></div>
       <div class="streak-chip">🔥 <span id="topStreak">0</span> <span class="txt">يوم متتالي</span></div>
-      <button class="icon-btn" title="الإشعارات"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="dot"></span></button>
+      <div style="position:relative">
+        <button class="icon-btn" id="notifBtn" onclick="toggleNotifications(event)" title="الإشعارات"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="dot" id="notifDot" style="display:none"></span></button>
+        <div id="notifPop" style="display:none;position:absolute;top:54px;inset-inline-end:0;background:var(--card-solid);border:1px solid var(--border-strong);border-radius:18px;box-shadow:var(--shadow);padding:14px;z-index:96;width:330px;max-width:calc(100vw - 30px)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-family:Cairo;font-weight:800;font-size:15px">🔔 الإشعارات</div><button class="btn btn-primary" id="notifAddBtn" style="padding:5px 11px;font-size:12px;display:none" onclick="openAddNotif()">＋ إشعار</button></div>
+          <div id="notifList" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:9px"><p style="color:var(--text-3);font-size:13px;text-align:center;padding:14px">جارٍ التحميل…</p></div>
+        </div>
+      </div>
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="الوضع">
         <svg id="moonIco" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
       </button>
@@ -1139,7 +1152,7 @@ table.tbl tr:hover td{background:var(--card-2)}
         <div id="admin-videos" class="admin-pane" style="display:none">
           <div class="card" style="padding:22px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:Cairo;font-size:17px;font-weight:800">إدارة الدروس (التأسيس والتجميعات)</h3><button class="btn btn-primary" onclick="openAddLesson()">＋ إضافة درس</button></div>
-            <table class="tbl"><thead><tr><th>العنوان</th><th>المادة</th><th>المرحلة</th><th>القسم</th><th>الفيديو</th><th>حذف</th></tr></thead><tbody id="lessonsBody"></tbody></table>
+            <table class="tbl"><thead><tr><th>العنوان</th><th>المادة</th><th>المرحلة</th><th>القسم</th><th>الفيديو</th><th>الإجراءات</th></tr></thead><tbody id="lessonsBody"></tbody></table>
           </div>
         </div>
 
@@ -1659,6 +1672,45 @@ function toggleAccentPicker(e){
   if(show){ renderAccentSwatches(); setTimeout(()=>document.addEventListener('click',closeAccentOnce),0); }
 }
 function closeAccentOnce(){ const p=document.getElementById('accentPop'); if(p)p.style.display='none'; document.removeEventListener('click',closeAccentOnce); }
+
+/* ===== الإشعارات ===== */
+function toggleNotifications(e){
+  if(e)e.stopPropagation();
+  const p=document.getElementById('notifPop'); if(!p)return;
+  const show=p.style.display==='none'; p.style.display=show?'block':'none';
+  if(show){ loadNotifications(true); setTimeout(()=>document.addEventListener('click',closeNotifOnce),0); }
+}
+function closeNotifOnce(ev){ const pop=document.getElementById('notifPop'); if(pop&&ev&&pop.contains(ev.target))return; if(pop)pop.style.display='none'; document.removeEventListener('click',closeNotifOnce); }
+async function loadNotifications(markRead){
+  const list=document.getElementById('notifList'), addB=document.getElementById('notifAddBtn');
+  if(addB) addB.style.display=(ME&&ME.role==='admin')?'inline-flex':'none';
+  let arr=[]; try{ arr=await API('/notifications'); }catch(e){}
+  if(list) list.innerHTML = arr.length ? arr.map(n=>`<div style="background:var(--card-2);border:1px solid var(--border);border-radius:12px;padding:11px 13px">
+    <div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:13.5px">${esc(n.title)}</b>${(ME&&ME.role==='admin')?`<span onclick="delNotif(${n.id})" style="cursor:pointer;color:#ef4444;font-size:13px">✕</span>`:''}</div>
+    ${n.body?`<div style="font-size:12.5px;color:var(--text-2);margin-top:4px;line-height:1.6">${esc(n.body)}</div>`:''}
+    <div style="font-size:11px;color:var(--text-3);margin-top:5px">${(n.created_at||'').slice(0,16).replace('T',' ')}</div></div>`).join('')
+    : '<p style="color:var(--text-3);font-size:13px;text-align:center;padding:14px">لا توجد إشعارات بعد</p>';
+  if(markRead && arr.length){ try{ localStorage.setItem('fikr_notif_seen', arr[0].id); }catch(e){} const d=document.getElementById('notifDot'); if(d)d.style.display='none'; }
+}
+async function refreshNotifDot(){
+  let arr=[]; try{ arr=await API('/notifications'); }catch(e){ return; }
+  let seen=0; try{ seen=+(localStorage.getItem('fikr_notif_seen')||0); }catch(e){}
+  const d=document.getElementById('notifDot'); if(d) d.style.display=(arr.length && arr[0].id>seen)?'block':'none';
+}
+function openAddNotif(){
+  openModal(`<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-family:Cairo">➕ إشعار جديد</h3><button class="btn btn-ghost" style="padding:6px 12px" onclick="closeModal()">✕</button></div>
+   <div class="field" style="margin-top:14px"><label>العنوان</label><input id="ntfTitle" placeholder="مثال: اختبار تجريبي يوم الخميس"></div>
+   <div class="field"><label>النص (اختياري)</label><textarea id="ntfBody" rows="3" placeholder="تفاصيل الإشعار…" style="width:100%;padding:12px 14px;border-radius:13px;border:1px solid var(--border);background:var(--card-2);color:var(--text);font-family:inherit;resize:vertical"></textarea></div>
+   <div id="ntfErr" style="display:none;color:#ef4444;font-size:13px;margin-bottom:10px"></div>
+   <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveNotif()">📢 نشر الإشعار</button>`);
+}
+async function saveNotif(){
+  const title=document.getElementById('ntfTitle').value.trim(), body=document.getElementById('ntfBody').value.trim();
+  if(!title){ const e=document.getElementById('ntfErr'); e.textContent='اكتب عنوان الإشعار'; e.style.display='block'; return; }
+  try{ await API('/notifications',{method:'POST',body:JSON.stringify({title,body})}); closeModal(); adminToast('تم نشر الإشعار 📢'); loadNotifications(true); }
+  catch(e){ const el=document.getElementById('ntfErr'); el.textContent=e.message; el.style.display='block'; }
+}
+async function delNotif(id){ try{ await API('/notifications/'+id,{method:'DELETE'}); loadNotifications(true); }catch(e){ adminToast(e.message); } }
 (function(){ try{ const a=localStorage.getItem('fikr_accent'); if(a)document.documentElement.setAttribute('data-accent',a); }catch(e){} })();
 
 /* ---- تعبئة كل أرقام الواجهة من قاعدة البيانات ---- */
@@ -1702,6 +1754,7 @@ async function refreshUserUI(){
   }catch(e){}
   loadLeaderboard();
   loadHomeStats();
+  refreshNotifDot();
 }
 async function loadHomeStats(){
   let s; try{ s=await API('/home-stats'); }catch(e){ return; }
@@ -1975,9 +2028,10 @@ function nqOptRow(k){
     <div id="nqThumb${k}" class="nq-thumb"></div>
   </div>`;
 }
-function openAddQuestion(){
+let NQ_EDIT_ID=null;
+function openAddQuestion(existing){
   if(!ME||(ME.role!=='admin'&&ME.role!=='teacher')){ adminToast('إضافة الأسئلة للمدير/المعلّم فقط'); return; }
-  NQ={img:'',optImgs:['','','','']};
+  NQ={img:'',optImgs:['','','','']}; NQ_EDIT_ID=null;
   openModal(`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-family:Cairo">➕ إضافة سؤال جديد</h3><button class="btn btn-ghost" style="padding:6px 12px" onclick="closeModal()">✕</button></div>
   <div class="nq-hint">💡 تقدر تضيف <b>صورة فقط</b> بدون نص — للسؤال أو لأي خيار. اضغط الدائرة بجانب الخيار الصحيح.</div>
   <div class="nq-sec"><div class="nq-sec-t">📝 نص السؤال <span style="font-weight:400;color:var(--text-3);font-size:12px">(اختياري مع وجود صورة)</span></div>
@@ -2009,6 +2063,18 @@ function openAddQuestion(){
   <div id="nqErr" style="display:none;color:#ef4444;font-size:13px;margin-bottom:10px"></div>
   <div style="display:flex;gap:10px"><button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="previewQuestion()">👁️ معاينة</button><button class="btn btn-primary" style="flex:2;justify-content:center" onclick="saveQuestion()">💾 حفظ السؤال</button></div>`,{width:'700px'});
   fillTopicList();
+  if(existing){
+    NQ_EDIT_ID=existing.id;
+    const h=document.querySelector('#modalContent h3'); if(h)h.textContent='✏️ تعديل سؤال';
+    const sv=(id,v)=>{const e=document.getElementById(id); if(e)e.value=v==null?'':v;};
+    const t=existing.type==='tf'?'tf':'mcq'; const tEl=document.querySelector('.toggle-opt[data-t="'+t+'"]'); if(tEl)setNqType(tEl,t);
+    sv('nqText',existing.text); sv('nqSub',existing.subject); sv('nqGrade',existing.grade); sv('nqTopic',existing.topic); sv('nqChapter',existing.chapter); sv('nqLvl',existing.level); sv('nqYear',existing.year); sv('nqEx',existing.explanation);
+    (existing.options||[]).forEach((op,k)=>{ const e=document.getElementById('nq'+'ABCD'[k]); if(e)e.value=op==null?'':op; });
+    const r=document.querySelector('input[name=nqAns][value="'+(existing.answer||0)+'"]'); if(r)r.checked=true;
+    (existing.opt_images||[]).forEach((url,k)=>{ if(url){ NQ.optImgs[k]=url; const th=document.getElementById('nqThumb'+k); if(th)th.innerHTML=`<img src="${url}"><span class="nq-x" onclick="NQ.optImgs[${k}]='';this.parentNode.innerHTML=''">✕</span>`; } });
+    if(existing.image_url){ NQ.img=existing.image_url; const tq=document.getElementById('nqThumbQ'); if(tq)tq.innerHTML=`<img src="${existing.image_url}"><span class="nq-x" onclick="NQ.img='';this.parentNode.innerHTML=''">✕</span>`; }
+    fillTopicList();
+  }
 }
 function setNqType(el,t){
   el.parentNode.querySelectorAll('.toggle-opt').forEach(x=>x.classList.remove('sel')); el.classList.add('sel');
@@ -2040,8 +2106,9 @@ async function saveFromPreview(){
   const b=PREVIEW_BODY; if(!b)return;
   const okOpts=b.options.filter((t,i)=>t!==''||(b.opt_images[i]&&b.opt_images[i]!==''));
   if((!b.text&&!b.image_url)||okOpts.length<2){ adminToast('بيانات ناقصة — أكمل السؤال والخيارات'); return; }
-  try{ await API('/questions',{method:'POST',body:JSON.stringify({text:b.text,options:b.options,opt_images:b.opt_images,answer:b.answer,subject:b.subject,grade:b.grade,topic:b.topic,chapter:b.chapter,type:b.type,year:b.year,level:b.level,explanation:b.explanation,image_url:b.image_url})});
-    closeModal(); adminToast('✅ تم حفظ السؤال'); renderBank(); loadAdminQuestions(); loadStats(); populateTopics(); }
+  const ep=NQ_EDIT_ID?('/questions/'+NQ_EDIT_ID):'/questions', mth=NQ_EDIT_ID?'PUT':'POST';
+  try{ await API(ep,{method:mth,body:JSON.stringify({text:b.text,options:b.options,opt_images:b.opt_images,answer:b.answer,subject:b.subject,grade:b.grade,topic:b.topic,chapter:b.chapter,type:b.type,year:b.year,level:b.level,explanation:b.explanation,image_url:b.image_url})});
+    const wasEdit=NQ_EDIT_ID; NQ_EDIT_ID=null; closeModal(); adminToast(wasEdit?'✅ تم تحديث السؤال':'✅ تم حفظ السؤال'); renderBank(); loadAdminQuestions(); loadStats(); populateTopics(); }
   catch(e){ adminToast(e.message); }
 }
 async function uploadQImg(input,kind,idx){
@@ -2114,7 +2181,8 @@ async function saveQuestion(){
   const okOpts = b.options.filter((t,i)=> t!=='' || (b.opt_images[i]&&b.opt_images[i]!==''));
   if(okOpts.length<2){ err('أضف خيارين على الأقل (نص أو صورة لكل خيار)'); return; }
   const body={text:b.text,options:b.options,opt_images:b.opt_images,answer:b.answer,subject:b.subject,grade:b.grade,topic:b.topic,chapter:b.chapter,type:b.type,year:b.year,level:b.level,explanation:b.explanation,image_url:b.image_url};
-  try{ await API('/questions',{method:'POST',body:JSON.stringify(body)}); closeModal(); adminToast('✅ تم حفظ السؤال'); renderBank(); loadAdminQuestions(); loadStats(); populateTopics(); }
+  const ep=NQ_EDIT_ID?('/questions/'+NQ_EDIT_ID):'/questions', mth=NQ_EDIT_ID?'PUT':'POST';
+  try{ await API(ep,{method:mth,body:JSON.stringify(body)}); const wasEdit=NQ_EDIT_ID; NQ_EDIT_ID=null; closeModal(); adminToast(wasEdit?'✅ تم تحديث السؤال':'✅ تم حفظ السؤال'); renderBank(); loadAdminQuestions(); loadStats(); populateTopics(); }
   catch(e){ err(e.message); }
 }
 /* ============ الاستيراد الجماعي (CSV / Excel / JSON) ============ */
@@ -2469,28 +2537,62 @@ async function saveTeacher(){
 }
 async function loadAdminLessons(){
   const tb=document.getElementById('lessonsBody'); if(!tb)return;
-  try{ const list=await API('/lessons');
-    tb.innerHTML = list.length ? list.map(l=>`<tr><td>${l.title}</td><td>${l.subject}</td><td>${l.grade}</td><td>${l.section}</td><td>${l.video_url?`<a href="${l.video_url}" target="_blank" style="color:var(--royal-light)">رابط</a>`:'—'}</td><td><a onclick="delLesson(${l.id})" style="color:#ef4444;cursor:pointer">حذف</a></td></tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:18px">لا توجد دروس — أضف أول درس</td></tr>';
+  try{ const list=await API('/lessons'); window.__adminL={}; list.forEach(l=>window.__adminL[l.id]=l);
+    tb.innerHTML = list.length ? list.map(l=>`<tr><td>${l.title}</td><td>${l.subject}</td><td>${l.grade}</td><td>${l.section}</td><td>${l.video_url?`<a onclick="previewLesson(${l.id})" style="color:var(--royal-light);cursor:pointer">▶ تشغيل</a>`:'—'}</td><td style="white-space:nowrap"><a onclick="previewLesson(${l.id})" style="color:var(--royal-light);cursor:pointer">معاينة</a> · <a onclick="editLesson(${l.id})" style="color:var(--gold);cursor:pointer">تعديل</a> · <a onclick="delLesson(${l.id})" style="color:#ef4444;cursor:pointer">حذف</a></td></tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:18px">لا توجد دروس — أضف أول درس</td></tr>';
   }catch(e){}
 }
 async function delLesson(id){ try{ await API('/lessons/'+id,{method:'DELETE'}); adminToast('تم حذف الدرس'); loadAdminLessons(); }catch(e){ adminToast(e.message); } }
-function openAddLesson(){
-  openModal(`<div style="display:flex;justify-content:space-between;align-items:start"><h3>إضافة درس جديد</h3><button class="btn btn-ghost" style="padding:6px 12px" onclick="closeModal()">✕</button></div>
+function videoEmbed(url){
+  if(!url) return '<p style="color:var(--text-3);text-align:center;padding:20px">لا يوجد فيديو لهذا الدرس</p>';
+  let m;
+  if((m=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/)))
+    return `<iframe width="100%" height="340" style="border-radius:14px;border:0" src="https://www.youtube.com/embed/${m[1]}" allowfullscreen></iframe>`;
+  if((m=url.match(/drive\.google\.com\/file\/d\/([\w-]+)/)))
+    return `<iframe width="100%" height="340" style="border-radius:14px;border:0" src="https://drive.google.com/file/d/${m[1]}/preview" allow="autoplay" allowfullscreen></iframe>`;
+  return `<video controls style="width:100%;max-height:360px;border-radius:14px;background:#000" src="${url}"></video>`;
+}
+function previewLesson(id){ const l=(window.__adminL||{})[id]; if(!l)return;
+  openModal(`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-family:Cairo">🎬 ${esc(l.title)}</h3><button class="btn btn-ghost" style="padding:6px 12px" onclick="closeModal()">✕</button></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><span class="tag" style="background:var(--gold-soft);color:var(--gold)">${l.subject}</span><span class="tag" style="background:var(--card-2);color:var(--text-2)">${l.grade}</span><span class="tag" style="background:var(--card-2);color:var(--text-2)">${l.section}</span></div>
+   ${videoEmbed(l.video_url)}`,{width:'680px'});
+}
+function editLesson(id){ const l=(window.__adminL||{})[id]; if(l)openAddLesson(l); }
+let LESSON_EDIT_ID=null;
+function openAddLesson(existing){
+  LESSON_EDIT_ID=null;
+  openModal(`<div style="display:flex;justify-content:space-between;align-items:start"><h3 style="font-family:Cairo">＋ إضافة درس جديد</h3><button class="btn btn-ghost" style="padding:6px 12px" onclick="closeModal()">✕</button></div>
    <div class="field" style="margin-top:14px"><label>عنوان الدرس</label><input id="nlTitle" placeholder="مثال: المتتاليات الحسابية"></div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
      <div class="field"><label>القسم</label><select id="nlSection"><option>تأسيس</option><option>تجميعات</option></select></div>
      <div class="field"><label>المادة</label><select id="nlSubject"><option>الرياضيات</option><option>الفيزياء</option><option>الكيمياء</option><option>الأحياء</option></select></div>
      <div class="field"><label>المرحلة</label><select id="nlGrade"><option>أولى ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></div>
-     <div class="field"><label>رابط الفيديو (اختياري)</label><input id="nlVideo" placeholder="YouTube / Drive"></div>
+     <div class="field"><label>رابط الفيديو</label><input id="nlVideo" placeholder="YouTube / Google Drive" autocapitalize="none" autocorrect="off"></div>
    </div>
+   <div class="nq-hint" style="margin-bottom:12px">🎥 الأفضل لصق <b>رابط YouTube أو Google Drive</b> (يشتغل لأي حجم بدون رفع). أو ارفع ملف فيديو صغير مباشرة:</div>
+   <label class="nq-qimg-drop" style="margin-bottom:12px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span><b>رفع ملف فيديو</b><br><small>للملفات الصغيرة فقط — الكبيرة استخدم رابطاً</small></span><input id="nlVideoFile" type="file" accept="video/*" style="display:none" onchange="uploadLessonVideo(this)"></label>
    <div id="nlErr" style="display:none;color:#ef4444;font-size:13px;margin-bottom:10px"></div>
-   <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveLesson()">حفظ الدرس</button>`);
+   <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveLesson()">💾 حفظ الدرس</button>`,{width:'620px'});
+  if(existing){
+    LESSON_EDIT_ID=existing.id;
+    const h=document.querySelector('#modalContent h3'); if(h)h.textContent='✏️ تعديل درس';
+    const sv=(id,v)=>{const e=document.getElementById(id); if(e)e.value=v==null?'':v;};
+    sv('nlTitle',existing.title); sv('nlSection',existing.section); sv('nlSubject',existing.subject); sv('nlGrade',existing.grade); sv('nlVideo',existing.video_url);
+  }
+}
+async function uploadLessonVideo(input){
+  const f=input.files[0]; if(!f)return;
+  if(f.size>8*1024*1024){ adminToast('الفيديو كبير — الصق رابط YouTube/Drive بدل الرفع'); input.value=''; return; }
+  adminToast('جارٍ رفع الفيديو…');
+  const reader=new FileReader();
+  reader.onload=async()=>{ try{ const r=await API('/qimage',{method:'POST',body:JSON.stringify({dataB64:reader.result,origName:f.name})}); const v=document.getElementById('nlVideo'); if(v)v.value=r.url; adminToast('تم رفع الفيديو ✅'); }catch(e){ adminToast(e.message); } };
+  reader.readAsDataURL(f);
 }
 async function saveLesson(){
   const g=id=>document.getElementById(id).value;
   const body={section:g('nlSection'),subject:g('nlSubject'),grade:g('nlGrade'),title:g('nlTitle').trim(),video_url:g('nlVideo').trim()};
   if(!body.title){ const e=document.getElementById('nlErr'); e.textContent='اكتب عنوان الدرس'; e.style.display='block'; return; }
-  try{ await API('/lessons',{method:'POST',body:JSON.stringify(body)}); closeModal(); adminToast('تم إضافة الدرس'); loadAdminLessons(); }
+  const ep=LESSON_EDIT_ID?('/lessons/'+LESSON_EDIT_ID):'/lessons', mth=LESSON_EDIT_ID?'PUT':'POST';
+  try{ await API(ep,{method:mth,body:JSON.stringify(body)}); const wasEdit=LESSON_EDIT_ID; LESSON_EDIT_ID=null; closeModal(); adminToast(wasEdit?'تم تحديث الدرس':'تم إضافة الدرس'); loadAdminLessons(); }
   catch(e){ const el=document.getElementById('nlErr'); el.textContent=e.message; el.style.display='block'; }
 }
 function mkChart(id,cfg){const el=document.getElementById(id);if(!el||!window.Chart)return;if(charts[id])charts[id].destroy();Chart.defaults.font.family='Tajawal';Chart.defaults.color=css('--text-2');charts[id]=new Chart(el,cfg);}
@@ -2538,9 +2640,16 @@ async function loadAdminQuestions(){
   }catch(e){}
   // الجدول (آخر 200 للأداء مع عشرات الآلاف)
   try{ const list=await API('/questions?limit=200'); const tagC={'سهل':'tag-easy','متوسط':'tag-mid','صعب':'tag-hard'};
+    window.__adminQ={}; list.forEach(q=>window.__adminQ[q.id]=q);
     tb.innerHTML=list.length? list.map(q=>`<tr><td>${(q.text||'').slice(0,70)||'🖼️ صورة'}${q.image_url?' 🖼️':''}</td><td>${q.topic||'—'}</td><td>${q.subject}</td><td><span class="tag ${tagC[q.level]||'tag-mid'}">${q.level||''}</span></td>
-      <td><a onclick="delQuestion(${q.id})" style="color:#ef4444;cursor:pointer">حذف</a></td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:18px">لا توجد أسئلة</td></tr>';
+      <td style="white-space:nowrap"><a onclick="previewAdminQuestion(${q.id})" style="color:var(--royal-light);cursor:pointer">معاينة</a> · <a onclick="editQuestion(${q.id})" style="color:var(--gold);cursor:pointer">تعديل</a> · <a onclick="delQuestion(${q.id})" style="color:#ef4444;cursor:pointer">حذف</a></td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:18px">لا توجد أسئلة</td></tr>';
   }catch(e){}
+}
+function editQuestion(id){ const q=(window.__adminQ||{})[id]; if(q)openAddQuestion(q); }
+function previewAdminQuestion(id){ const q=(window.__adminQ||{})[id]; if(!q)return;
+  openModal(`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-family:Cairo">👁️ معاينة السؤال</h3><button class="btn btn-ghost" style="padding:6px 12px" onclick="closeModal()">✕</button></div>
+   ${buildQCard(q,{})}
+   <p style="font-size:12px;color:var(--text-3);margin:10px 0 0;text-align:center">اضغط على خيار لكشف الإجابة الصحيحة.</p>`,{width:'640px'});
 }
 async function loadAdminFiles(){
   const pane=document.getElementById('admin-pdfs'); if(!pane)return; const tb=pane.querySelector('tbody'); if(!tb)return;
