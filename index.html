@@ -510,7 +510,7 @@ table.tbl tr:hover td{background:var(--card-2)}
       favorites:[], notes:[], topic_names:[], points_log:[], activity_log:[], daily_answers:[],
       flashcards:[], summaries:[], reports:[], ratings:[], notifications:[], sessions:{}, settings:{}
     };
-    const addU = (name,email,password,role,extra={}) => { const id=++db.seqs.users; db.users.push(Object.assign({id,name,email,password,role,xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:'',trial_start:'',subscribed:0},extra)); return id; };
+    const addU = (name,email,password,role,extra={}) => { const id=++db.seqs.users; db.users.push(Object.assign({id,name,email,password,role,xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:'',trial_start:'',subscribed:0,created_at:now()},extra)); return id; };
     addU('مدير المنصة','admin@tahsili.sa','admin123','admin',{subscribed:1});
     addU('فارس الرحيل','faris@tahsili.sa','123456','student');
     const addQ=(text,options,answer,subject,year,level,explanation)=>{const id=++db.seqs.questions;db.questions.push({id,text,options,answer,subject,year,level,explanation,topic:'',grade:'',chapter:'',type:'mcq',image_url:'',opt_images:[],created_at:now()});};
@@ -568,7 +568,7 @@ table.tbl tr:hover td{background:var(--card-2)}
       if(!name||!email||!password) return err('كل الحقول مطلوبة');
       if(DB.users.some(x=>x.email===email)) return err('البريد مسجّل مسبقاً');
       const id=DB.seqs.users+1; DB.seqs.users=id;
-      DB.users.push({id,name,email,password,role:'student',xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:'',trial_start:dayStr(),subscribed:0});
+      DB.users.push({id,name,email,password,role:'student',xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:'',trial_start:dayStr(),subscribed:0,created_at:now()});
       const t=tok(); DB.sessions[t]=id; persist();
       return J({token:t,user:{id,name,email,role:'student',xp:0,streak:0,trial_start:dayStr(),subscribed:0}});
     }
@@ -724,6 +724,7 @@ table.tbl tr:hover td{background:var(--card-2)}
     if(method==='GET'&&path==='/students'){ admin(); return J(DB.users.filter(x=>x.role==='student').sort((a,b)=>b.xp-a.xp).map(x=>{const rs=DB.results.filter(r=>r.user_id===x.id);return {id:x.id,name:x.name,email:x.email,xp:x.xp,streak:x.streak,active:x.active,subscribed:x.subscribed||0,trial_start:x.trial_start||'',exams:rs.length,avg_score:rs.length?Math.round(rs.reduce((a,r)=>a+r.score*100/r.total,0)/rs.length*10)/10:null};})); }
     if(method==='PATCH'&&m(/^\/students\/(\d+)\/toggle$/)){ admin(); const id=+m(/^\/students\/(\d+)\/toggle$/)[1]; const s=DB.users.find(x=>x.id===id); if(s)s.active=s.active?0:1; persist(); return J({active:s?s.active:0}); }
     if(method==='PATCH'&&m(/^\/students\/(\d+)\/subscription$/)){ admin(); const id=+m(/^\/students\/(\d+)\/subscription$/)[1]; const s=DB.users.find(x=>x.id===id); if(s)s.subscribed=s.subscribed?0:1; persist(); return J({subscribed:s?s.subscribed:0}); }
+    if(method==='GET'&&path==='/customers'){ admin(); return J(DB.users.filter(x=>x.role==='student'||x.role==='teacher').slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))||b.id-a.id).map(x=>({id:x.id,name:x.name,email:x.email,role:x.role,phone:x.phone||'',country:x.country||'',city:x.city||'',school:x.school||'',region:x.region||'',xp:x.xp||0,streak:x.streak||0,subscribed:x.subscribed||0,trial_start:x.trial_start||'',active:x.active,created_at:x.created_at||'',exams:DB.results.filter(r=>r.user_id===x.id).length}))); }
     if(method==='GET'&&path==='/stats'){ admin(); const bySub={}; DB.questions.forEach(q=>bySub[q.subject]=(bySub[q.subject]||0)+1); return J({users:DB.users.filter(x=>x.role==='student').length,questions:DB.questions.length,files:DB.files.length,exams:DB.results.length,bySubject:Object.entries(bySub).map(([subject,c])=>({subject,c}))}); }
     if(method==='GET'&&path==='/leaderboard'){ const period=query.period||'all'; if(period==='all') return J(DB.users.filter(x=>x.role==='student').sort((a,b)=>b.xp-a.xp).slice(0,15).map(x=>({name:x.name,xp:x.xp}))); const since=period==='week'?Date.now()-7*864e5:new Date(dayStr()).getTime(); const map={}; DB.points_log.forEach(p=>{ if(new Date(p.created_at).getTime()>=since){ const usr=DB.users.find(x=>x.id===p.user_id); if(usr&&usr.role==='student'){map[usr.name]=(map[usr.name]||0)+p.points;} } }); return J(Object.entries(map).map(([name,xp])=>({name,xp})).filter(r=>r.xp>0).sort((a,b)=>b.xp-a.xp).slice(0,15)); }
     if(method==='GET'&&path==='/activity'){ admin(); return J(DB.activity_log.slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||'')).slice(0,40).map(a=>({name:a.name,action:a.action,created_at:a.created_at}))); }
@@ -1149,6 +1150,7 @@ table.tbl tr:hover td{background:var(--card-2)}
           <div class="tab" onclick="adminTab(this,'questions')">الأسئلة</div>
           <div class="tab" onclick="adminTab(this,'students')">الطلاب</div>
           <div class="tab" onclick="adminTab(this,'teachers')">المعلّمون</div>
+          <div class="tab" onclick="adminTab(this,'customers')">👥 العملاء</div>
           <div class="tab" onclick="adminTab(this,'reports')">البلاغات</div>
         </div>
 
@@ -1225,6 +1227,19 @@ table.tbl tr:hover td{background:var(--card-2)}
           <div class="card" style="padding:22px">
             <h3 style="font-family:Cairo;font-size:17px;font-weight:800;margin-bottom:16px">🚩 بلاغات الطلاب عن الأسئلة</h3>
             <div id="reportsList"></div>
+          </div>
+        </div>
+
+        <div id="admin-customers" class="admin-pane" style="display:none">
+          <div class="card" style="padding:22px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+              <h3 style="font-family:Cairo;font-size:17px;font-weight:800">👥 العملاء المسجّلون <span id="custCount" class="tag" style="background:var(--grad);color:#fff">0</span></h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <input id="custSearch" class="search" style="max-width:220px" oninput="renderCustomers()" placeholder="🔍 بحث بالاسم أو البريد">
+                <button class="btn btn-gold" onclick="exportCustomers()">⬇ تصدير Excel</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>الاسم</th><th>البريد</th><th>الجوال</th><th>النوع</th><th>الاشتراك</th><th>الاختبارات</th><th>تاريخ التسجيل</th></tr></thead><tbody id="customersBody"><tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:18px">جارٍ التحميل...</td></tr></tbody></table></div>
           </div>
         </div>
       </section>
@@ -2598,8 +2613,40 @@ adminTab = function(el,which){
   if(which==='videos') loadAdminLessons();
   if(which==='teachers'){ loadTeachers(); loadActivity(); }
   if(which==='reports') loadReports();
+  if(which==='customers') loadCustomers();
   if(which==='overview') loadStats();
 };
+let CUSTOMERS=[];
+async function loadCustomers(){
+  try{ CUSTOMERS=await API('/customers'); }catch(e){ CUSTOMERS=[]; }
+  renderCustomers();
+}
+function renderCustomers(){
+  const tb=document.getElementById('customersBody'); if(!tb)return;
+  const q=(document.getElementById('custSearch')?.value||'').trim().toLowerCase();
+  const list=CUSTOMERS.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q)||(c.phone||'').includes(q));
+  const cc=document.getElementById('custCount'); if(cc)cc.textContent=CUSTOMERS.length;
+  tb.innerHTML = list.length ? list.map((c,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><span class="mini-av">${(c.name||'؟').trim()[0]}</span>${c.name||'—'}</td>
+    <td style="direction:ltr;text-align:start">${c.email||'—'}</td>
+    <td style="direction:ltr;text-align:start">${c.phone||'—'}</td>
+    <td>${c.role==='teacher'?'<span class="tag" style="background:rgba(139,92,246,.15);color:var(--phys)">معلّم</span>':'<span class="tag" style="background:rgba(59,130,246,.15);color:var(--math)">طالب</span>'}</td>
+    <td>${c.subscribed?'<span class="tag" style="background:rgba(16,185,129,.15);color:#10b981">مشترك ✅</span>':'<span class="tag" style="background:var(--gold-soft);color:var(--gold)">تجربة</span>'}</td>
+    <td>${c.exams||0}</td>
+    <td>${(c.created_at||'').slice(0,10)||'—'}</td></tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:18px">لا يوجد عملاء مسجّلون بعد</td></tr>';
+}
+function exportCustomers(){
+  if(!CUSTOMERS.length){ adminToast('لا يوجد عملاء للتصدير'); return; }
+  if(typeof XLSX==='undefined'){ adminToast('مكتبة Excel غير متوفرة'); return; }
+  const rows=CUSTOMERS.map((c,i)=>({ '#':i+1,'الاسم':c.name||'','البريد':c.email||'','الجوال':c.phone||'','النوع':c.role==='teacher'?'معلّم':'طالب','المدينة':c.city||'','المنطقة':c.region||'','الاشتراك':c.subscribed?'مشترك':'تجربة','نقاط XP':c.xp||0,'عدد الاختبارات':c.exams||0,'الحالة':c.active?'نشط':'موقوف','تاريخ التسجيل':(c.created_at||'').slice(0,10) }));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:5},{wch:22},{wch:26},{wch:16},{wch:8},{wch:14},{wch:14},{wch:10},{wch:9},{wch:13},{wch:8},{wch:13}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'العملاء');
+  XLSX.writeFile(wb,'عملاء-منصة-فكر-'+new Date().toISOString().slice(0,10)+'.xlsx');
+  adminToast('تم تصدير ملف Excel ✅');
+}
 async function loadReports(){
   const box=document.getElementById('reportsList'); if(!box)return;
   try{ const list=await API('/reports');
