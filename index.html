@@ -510,8 +510,8 @@ table.tbl tr:hover td{background:var(--card-2)}
       favorites:[], notes:[], topic_names:[], points_log:[], activity_log:[], daily_answers:[],
       flashcards:[], summaries:[], reports:[], ratings:[], notifications:[], sessions:{}, settings:{}
     };
-    const addU = (name,email,password,role,extra={}) => { const id=++db.seqs.users; db.users.push(Object.assign({id,name,email,password,role,xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:''},extra)); return id; };
-    addU('مدير المنصة','admin@tahsili.sa','admin123','admin');
+    const addU = (name,email,password,role,extra={}) => { const id=++db.seqs.users; db.users.push(Object.assign({id,name,email,password,role,xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:'',trial_start:'',subscribed:0},extra)); return id; };
+    addU('مدير المنصة','admin@tahsili.sa','admin123','admin',{subscribed:1});
     addU('فارس الرحيل','faris@tahsili.sa','123456','student');
     const addQ=(text,options,answer,subject,year,level,explanation)=>{const id=++db.seqs.questions;db.questions.push({id,text,options,answer,subject,year,level,explanation,topic:'',grade:'',chapter:'',type:'mcq',image_url:'',opt_images:[],created_at:now()});};
     addQ('ما ناتج اشتقاق الدالة f(x)=sin(x)؟',['cos(x)','-cos(x)','-sin(x)','tan(x)'],0,'رياضيات','1446','متوسط','مشتقة الجيب هي جيب التمام cos(x).');
@@ -524,7 +524,7 @@ table.tbl tr:hover td{background:var(--card-2)}
           for(let i=1;i<=2;i++){ const id=++db.seqs.lessons; db.lessons.push({id,section,subject:s,grade:g,title:`${s} ${g} — الدرس ${i}`,video_url:'',ord:i,created_at:now()}); }
     return db;
   }
-  function load(){ try{ const r=localStorage.getItem(LS_KEY); if(r){ const d=JSON.parse(r); d.notifications=d.notifications||[]; d.seqs=d.seqs||{}; if(d.seqs.notifications==null)d.seqs.notifications=0; return d; } }catch(e){} const d=seed(); save(d); return d; }
+  function load(){ try{ const r=localStorage.getItem(LS_KEY); if(r){ const d=JSON.parse(r); d.notifications=d.notifications||[]; d.seqs=d.seqs||{}; if(d.seqs.notifications==null)d.seqs.notifications=0; (d.users||[]).forEach(x=>{ if(x.trial_start==null)x.trial_start=''; if(x.subscribed==null)x.subscribed=(x.role==='admin'||x.role==='teacher')?1:0; }); return d; } }catch(e){} const d=seed(); save(d); return d; }
   function save(db){ try{ localStorage.setItem(LS_KEY, JSON.stringify(db)); }catch(e){ console.warn('تعذّر الحفظ (مساحة ممتلئة):', e.message); } }
   let DB = load();
   const persist = ()=>save(DB);
@@ -558,17 +558,19 @@ table.tbl tr:hover td{background:var(--card-2)}
       const usr=DB.users.find(x=>x.email===email);
       if(!usr||usr.password!==pass) return err('البريد أو كلمة المرور غير صحيحة');
       if(!usr.active) return err('الحساب موقوف',403);
-      const streak=updateStreak(usr); const t=tok(); DB.sessions[t]=usr.id; persist();
-      return J({token:t,user:{id:usr.id,name:usr.name,email:usr.email,role:usr.role,xp:usr.xp,streak,level:levelOf(usr.xp)}});
+      const streak=updateStreak(usr);
+      if(usr.role==='student' && !usr.trial_start){ usr.trial_start=dayStr(); }
+      const t=tok(); DB.sessions[t]=usr.id; persist();
+      return J({token:t,user:{id:usr.id,name:usr.name,email:usr.email,role:usr.role,xp:usr.xp,streak,level:levelOf(usr.xp),trial_start:usr.trial_start||'',subscribed:usr.subscribed||0}});
     }
     if(method==='POST'&&path==='/register'){
       let {name,email,password}=body; email=(email||'').trim().toLowerCase(); name=(name||'').trim();
       if(!name||!email||!password) return err('كل الحقول مطلوبة');
       if(DB.users.some(x=>x.email===email)) return err('البريد مسجّل مسبقاً');
       const id=DB.seqs.users+1; DB.seqs.users=id;
-      DB.users.push({id,name,email,password,role:'student',xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:''});
+      DB.users.push({id,name,email,password,role:'student',xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:'',trial_start:dayStr(),subscribed:0});
       const t=tok(); DB.sessions[t]=id; persist();
-      return J({token:t,user:{id,name,email,role:'student',xp:0,streak:0}});
+      return J({token:t,user:{id,name,email,role:'student',xp:0,streak:0,trial_start:dayStr(),subscribed:0}});
     }
     if(method==='POST'&&path==='/logout'){ const a=(headers&&(headers.Authorization||headers.authorization))||''; const t=a.replace('Bearer ',''); delete DB.sessions[t]; persist(); return J({ok:true}); }
     if(method==='GET'&&path==='/me'){ need(); return J({user:{...u,level:levelOf(u.xp)}}); }
@@ -719,8 +721,9 @@ table.tbl tr:hover td{background:var(--card-2)}
     if(method==='POST'&&m(/^\/reports\/(\d+)\/resolve$/)){ admin(); const id=+m(/^\/reports\/(\d+)\/resolve$/)[1]; const r=DB.reports.find(x=>x.id===id); if(r)r.status='resolved'; persist(); return J({ok:true}); }
 
     // ---- الإدارة ----
-    if(method==='GET'&&path==='/students'){ admin(); return J(DB.users.filter(x=>x.role==='student').sort((a,b)=>b.xp-a.xp).map(x=>{const rs=DB.results.filter(r=>r.user_id===x.id);return {id:x.id,name:x.name,email:x.email,xp:x.xp,streak:x.streak,active:x.active,exams:rs.length,avg_score:rs.length?Math.round(rs.reduce((a,r)=>a+r.score*100/r.total,0)/rs.length*10)/10:null};})); }
+    if(method==='GET'&&path==='/students'){ admin(); return J(DB.users.filter(x=>x.role==='student').sort((a,b)=>b.xp-a.xp).map(x=>{const rs=DB.results.filter(r=>r.user_id===x.id);return {id:x.id,name:x.name,email:x.email,xp:x.xp,streak:x.streak,active:x.active,subscribed:x.subscribed||0,trial_start:x.trial_start||'',exams:rs.length,avg_score:rs.length?Math.round(rs.reduce((a,r)=>a+r.score*100/r.total,0)/rs.length*10)/10:null};})); }
     if(method==='PATCH'&&m(/^\/students\/(\d+)\/toggle$/)){ admin(); const id=+m(/^\/students\/(\d+)\/toggle$/)[1]; const s=DB.users.find(x=>x.id===id); if(s)s.active=s.active?0:1; persist(); return J({active:s?s.active:0}); }
+    if(method==='PATCH'&&m(/^\/students\/(\d+)\/subscription$/)){ admin(); const id=+m(/^\/students\/(\d+)\/subscription$/)[1]; const s=DB.users.find(x=>x.id===id); if(s)s.subscribed=s.subscribed?0:1; persist(); return J({subscribed:s?s.subscribed:0}); }
     if(method==='GET'&&path==='/stats'){ admin(); const bySub={}; DB.questions.forEach(q=>bySub[q.subject]=(bySub[q.subject]||0)+1); return J({users:DB.users.filter(x=>x.role==='student').length,questions:DB.questions.length,files:DB.files.length,exams:DB.results.length,bySubject:Object.entries(bySub).map(([subject,c])=>({subject,c}))}); }
     if(method==='GET'&&path==='/leaderboard'){ const period=query.period||'all'; if(period==='all') return J(DB.users.filter(x=>x.role==='student').sort((a,b)=>b.xp-a.xp).slice(0,15).map(x=>({name:x.name,xp:x.xp}))); const since=period==='week'?Date.now()-7*864e5:new Date(dayStr()).getTime(); const map={}; DB.points_log.forEach(p=>{ if(new Date(p.created_at).getTime()>=since){ const usr=DB.users.find(x=>x.id===p.user_id); if(usr&&usr.role==='student'){map[usr.name]=(map[usr.name]||0)+p.points;} } }); return J(Object.entries(map).map(([name,xp])=>({name,xp})).filter(r=>r.xp>0).sort((a,b)=>b.xp-a.xp).slice(0,15)); }
     if(method==='GET'&&path==='/activity'){ admin(); return J(DB.activity_log.slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||'')).slice(0,40).map(a=>({name:a.name,action:a.action,created_at:a.created_at}))); }
@@ -880,6 +883,7 @@ table.tbl tr:hover td{background:var(--card-2)}
           <div id="dailyBody"><p style="color:var(--text-3)">جارٍ التحميل...</p></div>
         </div>
 
+        <div id="trialBar" style="margin-bottom:18px"></div>
         <div id="examCountdown" style="margin-bottom:24px"></div>
 
         <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-bottom:30px">
@@ -1196,7 +1200,7 @@ table.tbl tr:hover td{background:var(--card-2)}
         <div id="admin-students" class="admin-pane" style="display:none">
           <div class="card" style="padding:22px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:Cairo;font-size:17px;font-weight:800">إدارة الطلاب</h3><input class="search" style="max-width:220px" placeholder="🔍 بحث عن طالب" oninput=""></div>
-            <table class="tbl"><thead><tr><th>الطالب</th><th>الإنجاز</th><th>متوسط الدرجات</th><th>الاختبارات</th><th>الحالة</th><th>التحكم</th></tr></thead><tbody>
+            <table class="tbl"><thead><tr><th>الطالب</th><th>الإنجاز</th><th>متوسط الدرجات</th><th>الاختبارات</th><th>الاشتراك</th><th>الحالة</th><th>التحكم</th></tr></thead><tbody>
               <tr><td><span class="mini-av">عا</span>عبدالله العتيبي</td><td>92%</td><td>95.2</td><td>41</td><td><span class="dot-on"></span> نشط</td><td><a onclick="adminToast('إيقاف الحساب')" style="color:#ef4444;cursor:pointer">إيقاف</a></td></tr>
               <tr><td><span class="mini-av">سم</span>سارة المطيري</td><td>88%</td><td>91.7</td><td>38</td><td><span class="dot-on"></span> نشط</td><td><a onclick="adminToast('إيقاف الحساب')" style="color:#ef4444;cursor:pointer">إيقاف</a></td></tr>
               <tr><td><span class="mini-av">ف</span>فارس الرحيل</td><td>68%</td><td>82.5</td><td>23</td><td><span class="dot-on"></span> نشط</td><td><a onclick="adminToast('إيقاف الحساب')" style="color:#ef4444;cursor:pointer">إيقاف</a></td></tr>
@@ -1631,7 +1635,7 @@ function renderCharts(page){
   const mk=(id,cfg)=>{const el=document.getElementById(id);if(!el)return;if(charts[id])charts[id].destroy();charts[id]=new Chart(el,cfg);};
   const days=['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
   if(page==='home'){
-    loadHomeChart(); renderHomePlan(); renderExamCountdown();
+    loadHomeChart(); renderHomePlan(); renderExamCountdown(); renderTrialBar();
   }
   if(page==='plan') renderPlanResult();
   if(page==='dashboard') loadDashboardCharts();
@@ -1852,6 +1856,8 @@ async function refreshUserUI(){
   loadLeaderboard();
   loadHomeStats();
   refreshNotifDot();
+  renderTrialBar();
+  applyAccessGate();
 }
 async function loadHomeStats(){
   let s; try{ s=await API('/home-stats'); }catch(e){ return; }
@@ -2721,9 +2727,10 @@ async function loadStudents(){
       <td>${s.avg_score?Math.round(s.avg_score):'—'}%</td>
       <td>${s.avg_score||'—'}</td>
       <td>${s.exams}</td>
+      <td>${s.subscribed?'<span class="tag" style="background:rgba(16,185,129,.15);color:#10b981">مشترك ✅</span>':'<span class="tag" style="background:var(--gold-soft);color:var(--gold)">تجربة</span>'} <a onclick="toggleSub(${s.id})" style="color:var(--royal-light);cursor:pointer;font-size:12px">${s.subscribed?'إلغاء':'تفعيل'}</a></td>
       <td><span class="${s.active?'dot-on':'dot-off'}"></span> ${s.active?'نشط':'موقوف'}</td>
       <td><a onclick="toggleStudent(${s.id})" style="color:${s.active?'#ef4444':'#10b981'};cursor:pointer">${s.active?'إيقاف':'تفعيل'}</a></td></tr>`).join('');
-  }catch(e){ tb.innerHTML='<tr><td colspan=6 style="color:#ef4444">'+e.message+'</td></tr>'; }
+  }catch(e){ tb.innerHTML='<tr><td colspan=7 style="color:#ef4444">'+e.message+'</td></tr>'; }
 }
 async function toggleStudent(id){ try{ await API('/students/'+id+'/toggle',{method:'PATCH'}); adminToast('تم تحديث حالة الحساب'); loadStudents(); }catch(e){ adminToast(e.message); } }
 async function loadAdminQuestions(){
@@ -2851,6 +2858,42 @@ function triggerStudyAlarm(min){
   document.body.appendChild(ov);
   try{ notify('انتهى وقت المذاكرة! 🎉', `سجّلنا لك ${min} دقيقة دراسة.`); }catch(e){}
 }
+
+/* ===== التجربة المجانية والاشتراك ===== */
+function trialDaysLeft(){ if(!ME||!ME.trial_start)return null; const end=new Date(new Date(ME.trial_start).getTime()+3*86400000); return Math.ceil((end-new Date(planToday()))/86400000); }
+function hasAccess(){ if(!ME)return false; if(ME.role==='admin'||ME.role==='teacher')return true; if(+ME.subscribed)return true; const l=trialDaysLeft(); return l!=null&&l>0; }
+function renderTrialBar(){
+  const box=document.getElementById('trialBar'); if(!box)return;
+  if(!ME||ME.role!=='student'){ box.innerHTML=''; return; }
+  if(+ME.subscribed){ box.innerHTML=`<div class="card" style="padding:12px 18px;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3)"><span style="font-weight:800;color:#34d399">✅ اشتراكك مفعّل — وصول كامل لكل المنصة طوال التحصيلي.</span></div>`; return; }
+  const l=trialDaysLeft();
+  if(l!=null&&l>0){ box.innerHTML=`<div class="card" style="padding:13px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--gold-soft);border-color:rgba(251,146,60,.3)">
+    <span style="font-weight:800;color:var(--gold)">🎁 تجربتك المجانية: باقٍ ${l} ${l>1?'أيام':'يوم'} — استمتع بكل المزايا!</span>
+    <button class="btn btn-gold" style="padding:8px 16px;font-size:13px" onclick="openSubscribe()">اشترك الآن (149 ر.س)</button></div>`; }
+  else box.innerHTML='';
+}
+function applyAccessGate(){
+  const exist=document.getElementById('paywall');
+  if(hasAccess()){ if(exist)exist.remove(); return; }
+  if(exist)return;
+  const ov=document.createElement('div'); ov.id='paywall';
+  ov.style.cssText='position:fixed;inset:0;z-index:400;display:grid;place-items:center;background:rgba(5,8,20,.93);backdrop-filter:blur(10px);padding:20px;text-align:center';
+  ov.innerHTML=`<div style="max-width:440px"><div style="font-size:70px">🔒</div>
+    <h2 style="font-family:Cairo;font-size:26px;font-weight:900;color:#fff;margin:10px 0 8px">انتهت تجربتك المجانية</h2>
+    <p style="color:#cbd5e1;font-size:15px;margin-bottom:22px">اشترك باشتراك واحد <b style="color:#fbbf24">١٤٩ ر.س يكفيك طوال فترة التحصيلي</b> وواصل رحلتك نحو التفوّق.</p>
+    <button class="btn btn-gold btn-lg" style="width:100%;justify-content:center;margin-bottom:10px" onclick="openSubscribe()">اشترك الآن</button>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="doLogout()">تسجيل الخروج</button></div>`;
+  document.body.appendChild(ov);
+}
+function openSubscribe(){
+  openModal(`<div style="text-align:center"><div style="font-size:54px">💳</div>
+    <h3 style="font-family:Cairo;font-size:22px;font-weight:900;margin:8px 0">اشتراك التحصيلي الكامل</h3>
+    <div style="font-family:Cairo;font-size:40px;font-weight:900;color:var(--gold)">149 <small style="font-size:16px;color:var(--text-3)">ر.س</small></div>
+    <p style="color:var(--text-2);font-size:14px;margin:6px 0 18px">دفعة واحدة تكفيك طوال فترة التحصيلي — بدون تجديد.</p>
+    <p style="background:var(--card-2);border:1px solid var(--border);border-radius:13px;padding:14px;font-size:13.5px;color:var(--text-2);margin-bottom:16px">💬 بوابة الدفع الإلكتروني قيد التجهيز. لإتمام اشتراكك الآن تواصل مع إدارة المنصة وسيُفعَّل حسابك فوراً.</p>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="closeModal()">حسناً</button></div>`,{width:'420px'});
+}
+async function toggleSub(id){ try{ await API('/students/'+id+'/subscription',{method:'PATCH'}); loadStudents(); }catch(e){ adminToast(e.message);} }
 
 /* ===== السبّورة (مساحة رسم جانبية) ===== */
 let wbCtx=null, wbDrawing=false, wbColor='#2563eb', wbSizeVal=3, wbToolMode='pen', wbLast=null, wbBound=false;
@@ -3083,6 +3126,8 @@ async function doInstall(){ if(!deferredPrompt){ adminToast('على آيفون: 
     try{ const d=await API('/me'); ME=d.user; enterApp(); askNotifications(); dailyReminderCheck(); return; }catch(e){ localStorage.removeItem('th_token'); TOKEN=''; }
   }
   buildAuth();
+  // قادم من زر «ابدأ تجربتك المجانية» في صفحة الهبوط → افتح شاشة إنشاء حساب
+  if(new URLSearchParams(location.search).get('start')==='trial'){ try{ if(authMode!=='register')toggleAuthMode(); }catch(e){} }
 })();
 </script>
 </body>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة فِكر | طريقك الأول للتفوّق في التحصيلي</title>
+<meta name="description" content="منصة فِكر التعليمية — تأسيس وتجميعات وبنك أسئلة ضخم واختبارات محاكية وخطة مذاكرة ذكية. ابدأ رحلتك نحو درجة كاملة في التحصيلي.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --royal:#6366f1; --royal-2:#4f46e5; --cyan:#06b6d4; --coral:#fb923c; --gold:#fbbf24;
+  --grad:linear-gradient(135deg,#6366f1 0%,#4f46e5 42%,#06b6d4 110%);
+  --grad-gold:linear-gradient(135deg,#fb923c,#f59e0b 55%,#fbbf24);
+  --bg:#070d1f; --bg-2:#0b1428; --card:rgba(20,30,54,.66); --card-solid:#141e36;
+  --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.17);
+  --text:#f3f6ff; --text-2:#aab7d6; --text-3:#6b789c;
+  --shadow:0 40px 80px -36px rgba(2,6,23,.85);
+  --t:.4s cubic-bezier(.16,1,.3,1); --radius:24px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);line-height:1.8;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:-20%;z-index:-2;pointer-events:none;
+  background:radial-gradient(42% 42% at 16% 14%,rgba(99,102,241,.5),transparent 60%),radial-gradient(46% 46% at 88% 10%,rgba(6,182,212,.4),transparent 62%),radial-gradient(50% 50% at 78% 96%,rgba(251,146,60,.3),transparent 60%),radial-gradient(40% 40% at 6% 92%,rgba(99,102,241,.4),transparent 60%);
+  filter:blur(22px);animation:aurora 24s ease-in-out infinite alternate}
+body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.5;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);background-size:28px 28px;-webkit-mask-image:radial-gradient(70% 70% at 50% 30%,#000,transparent);mask-image:radial-gradient(70% 70% at 50% 30%,#000,transparent)}
+@keyframes aurora{0%{transform:translate3d(0,0,0) rotate(0) scale(1)}50%{transform:translate3d(-3%,2%,0) rotate(8deg) scale(1.08)}100%{transform:translate3d(2%,-2%,0) rotate(-6deg) scale(1.05)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+::selection{background:var(--coral);color:#231200}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:60;backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);background:rgba(7,13,31,.6);border-bottom:1px solid var(--border)}
+.nav-in{display:flex;align-items:center;gap:14px;padding:14px 0}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:46px;height:46px;border-radius:14px;background:var(--grad);display:grid;place-items:center;font-weight:900;font-size:22px;color:#fff;box-shadow:0 12px 26px -10px var(--royal-2),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand b{font-family:'Cairo';font-size:20px;font-weight:900}
+.brand b span{background:var(--grad-gold);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:8px;margin-inline-start:auto;align-items:center}
+.nav-links a.link{padding:9px 14px;border-radius:11px;color:var(--text-2);font-weight:600;font-size:14.5px;transition:var(--t)}
+.nav-links a.link:hover{color:#fff;background:rgba(255,255,255,.06)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:14px;border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:14.5px;transition:var(--t);position:relative;overflow:hidden}
+.btn::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%);transform:translateX(-130%);transition:.6s}
+.btn:hover::before{transform:translateX(130%)}
+.btn-primary{background:var(--grad);color:#fff;box-shadow:0 16px 30px -12px var(--royal-2),inset 0 1px 0 rgba(255,255,255,.3)}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 24px 42px -14px var(--royal-2)}
+.btn-gold{background:var(--grad-gold);color:#3a2200;box-shadow:0 14px 28px -12px var(--coral)}
+.btn-gold:hover{transform:translateY(-3px)}
+.btn-ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border-strong)}
+.btn-ghost:hover{transform:translateY(-3px);border-color:var(--royal)}
+.btn-lg{padding:15px 30px;font-size:16px;border-radius:16px}
+.menu-btn{display:none;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:11px;width:42px;height:42px;color:#fff;cursor:pointer;font-size:20px}
+
+/* hero */
+.hero{position:relative;padding:90px 0 70px;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--gold);background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.3);padding:8px 16px;border-radius:30px;margin-bottom:22px}
+.hero h1{font-family:'Cairo';font-size:clamp(34px,6vw,60px);font-weight:900;line-height:1.18;letter-spacing:-1px;margin-bottom:20px}
+.hero h1 .g{background:var(--grad-gold);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero p.sub{font-size:clamp(16px,2.4vw,20px);color:var(--text-2);max-width:680px;margin:0 auto 32px}
+.hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+.hero-note{font-size:13px;color:var(--text-3)}
+.hero-badges{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:46px}
+.hbadge{background:var(--card);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:18px;padding:18px 22px;min-width:150px;animation:floaty 5s ease-in-out infinite}
+.hbadge:nth-child(2){animation-delay:.6s}.hbadge:nth-child(3){animation-delay:1.2s}.hbadge:nth-child(4){animation-delay:1.8s}
+.hbadge .n{font-family:'Cairo';font-size:30px;font-weight:900;background:var(--grad-gold);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hbadge .l{font-size:13px;color:var(--text-2)}
+
+/* sections */
+section{padding:70px 0}
+.sec-head{text-align:center;max-width:680px;margin:0 auto 48px}
+.sec-head .eyebrow{margin-bottom:14px}
+.sec-head h2{font-family:'Cairo';font-size:clamp(26px,4vw,40px);font-weight:900;letter-spacing:-.5px;margin-bottom:12px}
+.sec-head p{color:var(--text-2);font-size:16px}
+.card{background:var(--card);backdrop-filter:blur(16px) saturate(130%);-webkit-backdrop-filter:blur(16px) saturate(130%);border:1px solid var(--border);border-radius:var(--radius);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 24px 50px -34px rgba(0,0,0,.6)}
+
+/* features */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.feat{padding:28px;transition:var(--t);position:relative;overflow:hidden}
+.feat:hover{transform:translateY(-8px);border-color:var(--border-strong)}
+.feat .ico{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;font-size:28px;margin-bottom:18px;box-shadow:0 12px 26px -12px rgba(0,0,0,.5)}
+.feat h3{font-family:'Cairo';font-size:19px;font-weight:800;margin-bottom:8px}
+.feat p{color:var(--text-2);font-size:14.5px}
+
+/* benefits split */
+.benefits{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.benefit-item{display:flex;gap:14px;margin-bottom:20px}
+.benefit-item .ck{width:34px;height:34px;border-radius:11px;background:rgba(16,185,129,.16);color:#34d399;display:grid;place-items:center;flex-shrink:0;font-weight:900}
+.benefit-item h4{font-family:'Cairo';font-size:16.5px;font-weight:800;margin-bottom:3px}
+.benefit-item p{color:var(--text-2);font-size:14px}
+.benefit-visual{padding:34px;text-align:center;background:var(--grad);border-radius:28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.benefit-visual .big{font-family:'Cairo';font-size:64px;font-weight:900;line-height:1}
+.benefit-visual .ring{width:170px;height:170px;border-radius:50%;border:10px solid rgba(255,255,255,.18);border-top-color:#fff;margin:0 auto 18px;display:grid;place-items:center;animation:floaty 6s ease-in-out infinite}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.step{padding:28px;text-align:center;position:relative}
+.step .num{width:54px;height:54px;border-radius:50%;background:var(--grad-gold);color:#3a2200;display:grid;place-items:center;font-family:'Cairo';font-size:22px;font-weight:900;margin:0 auto 16px;box-shadow:0 12px 26px -10px var(--coral)}
+.step h3{font-family:'Cairo';font-size:18px;font-weight:800;margin-bottom:8px}
+.step p{color:var(--text-2);font-size:14px}
+
+/* stats band */
+.statband{background:var(--card);border:1px solid var(--border);border-radius:28px;padding:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:24px;text-align:center}
+.statband .n{font-family:'Cairo';font-size:clamp(30px,5vw,44px);font-weight:900;background:var(--grad-gold);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.statband .l{color:var(--text-2);font-size:14px}
+
+/* testimonials */
+.tst-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:20px}
+.tst{padding:26px}
+.tst .stars{color:var(--gold);font-size:15px;margin-bottom:10px}
+.tst p{font-size:15px;margin-bottom:16px;line-height:1.9}
+.tst .who{display:flex;align-items:center;gap:12px}
+.tst .av{width:44px;height:44px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:800}
+.tst .who b{font-size:14.5px;display:block}
+.tst .who span{font-size:12.5px;color:var(--text-3)}
+
+/* pricing */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;align-items:stretch}
+.price{padding:32px 28px;display:flex;flex-direction:column;transition:var(--t);position:relative}
+.price:hover{transform:translateY(-8px)}
+.price.pop{border:2px solid var(--coral);box-shadow:0 30px 70px -30px var(--coral)}
+.price .tag-pop{position:absolute;top:-14px;inset-inline-start:50%;transform:translateX(50%);background:var(--grad-gold);color:#3a2200;font-weight:800;font-size:12px;padding:6px 16px;border-radius:20px}
+.price h3{font-family:'Cairo';font-size:20px;font-weight:800;margin-bottom:6px}
+.price .amt{font-family:'Cairo';font-size:46px;font-weight:900;line-height:1;margin:10px 0 2px}
+.price .amt small{font-size:16px;color:var(--text-3);font-weight:700}
+.price .per{color:var(--text-3);font-size:13px;margin-bottom:20px}
+.price ul{list-style:none;margin-bottom:24px;flex:1}
+.price ul li{padding:8px 0;font-size:14.5px;color:var(--text-2);display:flex;gap:10px;align-items:flex-start}
+.price ul li::before{content:"✓";color:#34d399;font-weight:900}
+.price ul li.no{color:var(--text-3)}
+.price ul li.no::before{content:"✕";color:var(--text-3)}
+
+/* faq */
+.faq{max-width:760px;margin:0 auto}
+.q-item{border:1px solid var(--border);border-radius:16px;margin-bottom:12px;overflow:hidden;background:var(--card)}
+.q-head{padding:18px 22px;display:flex;justify-content:space-between;gap:12px;cursor:pointer;font-weight:700;font-size:15.5px;transition:var(--t)}
+.q-head:hover{background:rgba(255,255,255,.04)}
+.q-head .chev{transition:transform .3s;color:var(--text-3)}
+.q-item.open .chev{transform:rotate(180deg)}
+.q-body{display:none;padding:0 22px 20px;color:var(--text-2);font-size:14.5px;line-height:1.9}
+.q-item.open .q-body{display:block}
+
+/* cta band */
+.cta-band{background:var(--grad);border-radius:32px;padding:56px 40px;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.cta-band h2{font-family:'Cairo';font-size:clamp(26px,4vw,38px);font-weight:900;color:#fff;margin-bottom:12px}
+.cta-band p{color:rgba(255,255,255,.9);font-size:17px;margin-bottom:26px;max-width:560px;margin-inline:auto}
+
+/* footer */
+footer{padding:50px 0 30px;border-top:1px solid var(--border);margin-top:40px;text-align:center;color:var(--text-3);font-size:13.5px}
+footer .brand{justify-content:center;margin-bottom:14px}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+.reveal.in{opacity:1;transform:none}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(3,7,18,.7);backdrop-filter:blur(8px);z-index:200;display:none;place-items:center;padding:20px}
+.modal-bg.open{display:grid;animation:pop .3s}
+.modal{background:var(--card-solid);border:1px solid var(--border-strong);border-radius:24px;max-width:440px;width:100%;padding:32px;text-align:center;box-shadow:var(--shadow)}
+
+@media(max-width:820px){
+  .benefits{grid-template-columns:1fr}
+  .nav-links{position:fixed;inset:64px 0 auto 0;flex-direction:column;background:var(--card-solid);border-bottom:1px solid var(--border);padding:14px;display:none}
+  .nav-links.open{display:flex}
+  .nav-links a.link,.nav-links .btn{width:100%;text-align:center}
+  .menu-btn{display:grid;place-items:center;margin-inline-start:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="wrap nav-in">
+    <a href="#" class="brand"><span class="logo">ف</span><b>منصة <span>فِكر</span></b></a>
+    <button class="menu-btn" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+    <div class="nav-links" id="navlinks">
+      <a class="link" href="#features">المزايا</a>
+      <a class="link" href="#how">كيف تبدأ</a>
+      <a class="link" href="#pricing">الباقات</a>
+      <a class="link" href="#faq">الأسئلة</a>
+      <a class="btn btn-ghost" href="https://farisalrehaili.github.io/fikr/">تسجيل الدخول</a>
+      <a class="btn btn-primary" href="https://farisalrehaili.github.io/fikr/">ابدأ الآن</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero wrap">
+  <span class="eyebrow">🚀 منصتك الأولى لاختبار التحصيلي</span>
+  <h1>طريقك نحو <span class="g">الدرجة الكاملة</span><br>في التحصيلي يبدأ من هنا</h1>
+  <p class="sub">تأسيس متكامل، أحدث التجميعات، بنك أسئلة ضخم، اختبارات محاكية للواقع، وخطة مذاكرة ذكية تتابع تقدّمك يوماً بيوم — كل ما تحتاجه في مكان واحد.</p>
+  <div class="hero-cta">
+    <a class="btn btn-gold btn-lg" href="https://farisalrehaili.github.io/fikr/?start=trial">🎁 ابدأ تجربتك المجانية ٣ أيام</a>
+    <a class="btn btn-ghost btn-lg" href="#pricing">شوف الباقة</a>
+  </div>
+  <p class="hero-note">٣ أيام مجاناً بالكامل · بدون بطاقة بنكية · تقدر تلغي في أي وقت</p>
+  <div class="hero-badges">
+    <div class="hbadge"><div class="n">4 مواد</div><div class="l">رياضيات · فيزياء · كيمياء · أحياء</div></div>
+    <div class="hbadge"><div class="n">آلاف</div><div class="l">الأسئلة والتجميعات</div></div>
+    <div class="hbadge"><div class="n">محاكاة</div><div class="l">اختبار بتوقيت حقيقي</div></div>
+    <div class="hbadge"><div class="n">AI</div><div class="l">خطة مذاكرة ذكية</div></div>
+  </div>
+</header>
+
+<!-- FEATURES -->
+<section id="features" class="wrap">
+  <div class="sec-head reveal">
+    <span class="eyebrow">💎 لماذا فِكر؟</span>
+    <h2>كل أدوات التفوّق في منصة واحدة</h2>
+    <p>صُمّمت فِكر خصيصاً لطالب التحصيلي السعودي — من التأسيس حتى ليلة الاختبار.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="card feat reveal"><div class="ico" style="background:rgba(99,102,241,.16);color:#818cf8">📚</div><h3>تأسيس متكامل</h3><p>دروس مرتّبة لكل مادة ومرحلة تبني أساسك من الصفر بشروحات وفيديوهات.</p></div>
+    <div class="card feat reveal"><div class="ico" style="background:rgba(6,182,212,.16);color:#22d3ee">🗂️</div><h3>أحدث التجميعات</h3><p>تجميعات التحصيلي محدّثة ومنظّمة حسب الباب مع شرح لكل سؤال.</p></div>
+    <div class="card feat reveal"><div class="ico" style="background:rgba(16,185,129,.16);color:#34d399">🧠</div><h3>بنك أسئلة ضخم</h3><p>آلاف الأسئلة مع فلاتر ذكية وبحث، وأسئلة بالصور للرسوم والمعادلات.</p></div>
+    <div class="card feat reveal"><div class="ico" style="background:rgba(251,146,60,.16);color:#fb923c">📝</div><h3>اختبارات محاكية</h3><p>محاكاة كاملة بتوقيت الاختبار الحقيقي مع تحليل أداء بعد كل اختبار.</p></div>
+    <div class="card feat reveal"><div class="ico" style="background:rgba(168,85,247,.16);color:#c084fc">✨</div><h3>خطة مذاكرة ذكية</h3><p>خطة مخصّصة حسب وقتك وهدفك، تتابع إنجازك اليومي وتذكّرك بما تبقّى.</p></div>
+    <div class="card feat reveal"><div class="ico" style="background:rgba(59,130,246,.16);color:#60a5fa">🔁</div><h3>المراجعة الذكية</h3><p>كل خطأ يُحفظ تلقائياً ويعود لك بنظام التكرار المتباعد حتى تتقنه.</p></div>
+    <div class="card feat reveal"><div class="ico" style="background:rgba(236,72,153,.16);color:#f472b6">✏️</div><h3>سبّورة الحلول</h3><p>مساحة رسم جانبية تحلّ عليها مسائل الرياضيات والفيزياء أثناء الاختبار.</p></div>
+    <div class="card feat reveal"><div class="ico" style="background:rgba(245,158,11,.16);color:#fbbf24">🏆</div><h3>تحفيز ومنافسة</h3><p>نقاط خبرة، سلاسل يومية، شارات إنجاز، ولوحة متصدرين تشعل حماسك.</p></div>
+  </div>
+</section>
+
+<!-- BENEFITS -->
+<section class="wrap">
+  <div class="benefits">
+    <div class="reveal">
+      <span class="eyebrow">🎯 نتائج تتكلم</span>
+      <h2 style="font-family:'Cairo';font-size:clamp(24px,3.5vw,34px);font-weight:900;margin-bottom:22px">ذاكر بذكاء… مو بس بجهد</h2>
+      <div class="benefit-item"><div class="ck">✓</div><div><h4>اعرف نقاط ضعفك بدقّة</h4><p>تحليل أدائك يوجّهك للمواضيع التي تحتاج تركيزاً أكثر.</p></div></div>
+      <div class="benefit-item"><div class="ck">✓</div><div><h4>وفّر وقتك</h4><p>محتوى منظّم وخطة جاهزة بدل التشتّت بين عشرات المصادر.</p></div></div>
+      <div class="benefit-item"><div class="ck">✓</div><div><h4>تابع تقدّمك لحظياً</h4><p>أرقامك حقيقية: نسبة الإنجاز، توقّع الدرجة، وساعات المذاكرة.</p></div></div>
+      <div class="benefit-item"><div class="ck">✓</div><div><h4>استمر بدون ملل</h4><p>نظام تحفيز يخلّيك تذاكر كل يوم وتحافظ على سلسلتك.</p></div></div>
+    </div>
+    <div class="benefit-visual reveal">
+      <div class="ring"><div><div class="big" style="color:#fff">+18%</div><div style="color:rgba(255,255,255,.85);font-size:13px">تحسّن متوقّع</div></div></div>
+      <p style="color:#fff;font-weight:700;font-size:17px">طلاب يذاكرون بانتظام على فِكر يلاحظون فرقاً واضحاً في درجاتهم التجريبية.</p>
+      <p style="color:rgba(255,255,255,.8);font-size:13px;margin-top:8px">* أرقام توضيحية — عدّلها كما تشاء.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section id="how" class="wrap">
+  <div class="sec-head reveal"><span class="eyebrow">⚡ ابدأ خلال دقيقة</span><h2>كيف تبدأ مع فِكر؟</h2><p>ثلاث خطوات بسيطة تفصلك عن خطة مذاكرة احترافية.</p></div>
+  <div class="steps">
+    <div class="card step reveal"><div class="num">1</div><h3>ابدأ تجربتك المجانية</h3><p>سجّل في ثوانٍ وتنفتح لك المنصة كاملة ٣ أيام.</p></div>
+    <div class="card step reveal"><div class="num">2</div><h3>حدّد هدفك ووقتك</h3><p>والنظام يبني لك خطة مذاكرة ذكية مخصّصة.</p></div>
+    <div class="card step reveal"><div class="num">3</div><h3>ذاكر وتفوّق</h3><p>دروس واختبارات ومراجعة ذكية تتابع تقدّمك يومياً.</p></div>
+  </div>
+</section>
+
+
+<!-- TESTIMONIALS -->
+<section class="wrap">
+  <div class="sec-head reveal"><span class="eyebrow">💬 آراء الطلاب</span><h2>طلاب بدأوا… ولمسوا الفرق</h2><p>تجارب توضيحية — استبدلها بآراء طلابك الحقيقية.</p></div>
+  <div class="tst-grid">
+    <div class="card tst reveal"><div class="stars">★★★★★</div><p>«التجميعات والمحاكاة خلّتني أدخل الاختبار وأنا مرتاح. الخطة الذكية نظّمت وقتي تماماً.»</p><div class="who"><span class="av">ع</span><div><b>عبدالله</b><span>ثالث ثانوي</span></div></div></div>
+    <div class="card tst reveal"><div class="stars">★★★★★</div><p>«المراجعة الذكية حلوة مرة — ترجّع لي الأسئلة اللي غلطت فيها لين أتقنها.»</p><div class="who"><span class="av">س</span><div><b>سارة</b><span>طالبة تحصيلي</span></div></div></div>
+    <div class="card tst reveal"><div class="stars">★★★★★</div><p>«التصميم مريح والمحتوى مرتّب. حسّيت إني أذاكر بذكاء مو بس بجهد.»</p><div class="who"><span class="av">م</span><div><b>محمد</b><span>ثاني ثانوي</span></div></div></div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="wrap">
+  <div class="sec-head reveal"><span class="eyebrow">💳 اشتراك واحد بسيط</span><h2>اشتراك واحد… يكفيك التحصيلي كله</h2><p>بدون باقات معقّدة ولا تجديد شهري — ادفع مرة واحدة واستمتع بالمنصة كاملة طوال موسمك.</p></div>
+  <div class="price-wrap reveal" style="max-width:520px;margin:0 auto">
+    <div class="card price pop">
+      <span class="tag-pop">الأكثر طلباً 🔥</span>
+      <h3>اشتراك التحصيلي الكامل</h3>
+      <div class="amt">149<small> ر.س</small></div>
+      <div class="per">دفعة واحدة · تكفيك <b style="color:var(--gold)">طوال فترة التحصيلي</b></div>
+      <ul>
+        <li>وصول كامل لكل المواد الأربع</li>
+        <li>بنك الأسئلة + كل التجميعات</li>
+        <li>اختبارات محاكية بتوقيت حقيقي</li>
+        <li>خطة مذاكرة ذكية + متابعة يومية</li>
+        <li>المراجعة الذكية والسبّورة والتحفيز</li>
+        <li>كل التحديثات الجديدة طوال الموسم</li>
+        <li>بدون أي تجديد أو رسوم خفية</li>
+      </ul>
+      <a class="btn btn-gold btn-lg" href="https://farisalrehaili.github.io/fikr/?start=trial" style="width:100%;justify-content:center">🎁 ابدأ ٣ أيام مجاناً</a>
+      <button class="btn btn-ghost" data-plan="التحصيلي الكامل" data-price="149" onclick="subscribe(this)" style="width:100%;justify-content:center;margin-top:10px">اشترك مباشرة (149 ر.س)</button>
+      <p style="text-align:center;color:var(--text-3);font-size:12px;margin-top:12px">تبدأ بتجربة مجانية ٣ أيام — وإذا عجبتك تكمل باشتراك واحد.</p>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--text-3);font-size:13px;margin-top:20px">السعر قابل للتعديل بسهولة، وبوابة الدفع تُربط لاحقاً.</p>
+  </section>
+
+<!-- FAQ -->
+<section id="faq" class="wrap">
+  <div class="sec-head reveal"><span class="eyebrow">❓ أسئلة شائعة</span><h2>كل اللي تبي تعرفه</h2></div>
+  <div class="faq">
+    <div class="q-item"><div class="q-head" onclick="this.parentNode.classList.toggle('open')">هل المنصة مخصّصة لاختبار التحصيلي؟ <span class="chev">▾</span></div><div class="q-body">نعم، فِكر مبنية بالكامل لطالب التحصيلي السعودي: تأسيس، تجميعات، بنك أسئلة، واختبارات محاكية للمواد الأربع.</div></div>
+    <div class="q-item"><div class="q-head" onclick="this.parentNode.classList.toggle('open')">هل أقدر أستخدمها على الجوال؟ <span class="chev">▾</span></div><div class="q-body">أكيد — المنصة متجاوبة بالكامل وتعمل بسلاسة على الجوال والكمبيوتر دون أي تطبيق إضافي.</div></div>
+    <div class="q-item"><div class="q-head" onclick="this.parentNode.classList.toggle('open')">كيف تساعدني الخطة الذكية؟ <span class="chev">▾</span></div><div class="q-body">تبني لك جدول مذاكرة حسب وقتك وتاريخ اختبارك، وتتابع إنجازك يومياً وتعلّم المهام تلقائياً عند إكمال الدروس.</div></div>
+    <div class="q-item"><div class="q-head" onclick="this.parentNode.classList.toggle('open')">هل أقدر أجرّب قبل الاشتراك؟ <span class="chev">▾</span></div><div class="q-body">أكيد! عندك <b>تجربة مجانية ٣ أيام كاملة</b> تستكشف فيها المنصة بالكامل بدون أي بطاقة بنكية — وإذا عجبتك تكمل باشتراك واحد ١٤٩ ر.س.</div></div>
+    <div class="q-item"><div class="q-head" onclick="this.parentNode.classList.toggle('open')">كيف أدفع؟ <span class="chev">▾</span></div><div class="q-body">الاشتراك دفعة واحدة <b>١٤٩ ر.س تكفيك طوال فترة التحصيلي</b> (بدون تجديد). بوابة الدفع تُفعّل قريباً — تبدأ الآن بتجربتك المجانية ونتواصل معك لإتمام الاشتراك.</div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="wrap">
+  <div class="cta-band reveal">
+    <h2>جاهز تبدأ رحلتك نحو التفوّق؟</h2>
+    <p>انضم لطلاب فِكر اليوم، وخلّ مذاكرتك أذكى وأمتع وأكثر تنظيماً.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-gold btn-lg" href="#pricing">اشترك الآن</a>
+      <a class="btn btn-ghost btn-lg" href="https://farisalrehaili.github.io/fikr/" style="background:rgba(255,255,255,.14)">جرّب مجاناً</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="wrap">
+  <a href="#" class="brand"><span class="logo">ف</span><b>منصة <span>فِكر</span></b></a>
+  <p>منصتك التعليمية الذكية لاختبار التحصيلي.</p>
+  <p style="margin-top:10px;color:var(--text-3)">© <span id="yr"></span> منصة فِكر — جميع الحقوق محفوظة.</p>
+</footer>
+
+<!-- subscribe modal -->
+<div class="modal-bg" id="subModal" onclick="if(event.target===this)closeSub()">
+  <div class="modal">
+    <div style="font-size:54px;margin-bottom:8px">🎉</div>
+    <h3 style="font-family:'Cairo';font-size:22px;font-weight:900;margin-bottom:8px">شكراً لاهتمامك!</h3>
+    <p id="subMsg" style="color:var(--text-2);font-size:15px;margin-bottom:22px"></p>
+    <a class="btn btn-primary" href="https://farisalrehaili.github.io/fikr/" style="width:100%;justify-content:center;margin-bottom:10px">ابدأ تجربتك المجانية الآن</a>
+    <button class="btn btn-ghost" onclick="closeSub()" style="width:100%;justify-content:center">إغلاق</button>
+  </div>
+</div>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  // ===== الاشتراك (بدون بوابة دفع — تُربط لاحقاً) =====
+  // 👈 لربط بوابة الدفع لاحقاً: استبدل محتوى هذه الدالة بتحويل المستخدم لرابط الدفع
+  //    مثال: location.href = 'https://your-payment-link?plan='+plan+'&amount='+price;
+  function subscribe(btn){
+    const plan=btn.dataset.plan, price=btn.dataset.price;
+    document.getElementById('subMsg').innerHTML=`اخترت الباقة <b>${plan}</b> بسعر <b>${price} ر.س</b>.<br>بوابة الدفع قيد التجهيز — ابدأ تجربتك المجانية الآن وسنفعّل اشتراكك قريباً.`;
+    document.getElementById('subModal').classList.add('open');
+  }
+  function closeSub(){ document.getElementById('subModal').classList.remove('open'); }
+  // close mobile menu on link click
+  document.querySelectorAll('#navlinks a').forEach(a=>a.addEventListener('click',()=>document.getElementById('navlinks').classList.remove('open')));
+  // scroll reveal
+  const io=new IntersectionObserver((es)=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }),{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
