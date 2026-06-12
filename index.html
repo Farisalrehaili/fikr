@@ -876,6 +876,8 @@ table.tbl tr:hover td{background:var(--card-2)}
           <div class="card stat"><div class="ico" style="background:rgba(59,130,246,.15);color:var(--math)">⚡</div><div class="num" id="hXp">0</div><div class="lbl">نقطة خبرة XP</div><div class="trend" id="hLevel">المستوى 1</div></div>
         </div>
 
+        <div id="homePlan" style="margin-bottom:30px"></div>
+
         <div class="section-head"><div><h2>أقسام المنصة</h2><p>كل ما تحتاجه للتحصيلي منظّم باحترافية</p></div></div>
         <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr))">
           <div class="card subj-card" onclick="document.querySelector('[data-page=foundation]').click()"><span class="glow" style="background:var(--math)"></span><div class="ico" style="background:rgba(59,130,246,.15)">📚</div><h3>التأسيس</h3><p class="meta">ابنِ أساسك من الصفر بكتب وشروحات مرتبة</p><div class="progress"><span id="barFoundation" style="width:0%"></span></div></div>
@@ -1478,38 +1480,99 @@ function showResult(name,score,total){
 }
 
 /* ============ AI PLAN ============ */
-function genPlan(){
-  const h=document.getElementById('planHours').value||3;
-  const target=document.getElementById('planTarget').value||90;
+/* ============ الخطة الذكية (محفوظة + مرتبطة بالدروس) ============ */
+function planKey(){ return 'fikr_plan_'+((ME&&ME.id)||'x'); }
+function loadPlan(){ try{ const r=localStorage.getItem(planKey()); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function savePlan(p){ try{ localStorage.setItem(planKey(), JSON.stringify(p)); }catch(e){} }
+function planToday(){ return new Date(Date.now()+3*3600*1000).toISOString().slice(0,10); }
+async function getProgressSet(){ try{ const ids=await API('/progress'); return new Set(ids); }catch(e){ return new Set(); } }
+/* وقت اليوم على المنصة (بالدقائق) */
+function studyKey(){ return 'fikr_smin_'+planToday(); }
+function studyMinToday(){ try{ return +(localStorage.getItem(studyKey())||0); }catch(e){ return 0; } }
+function addStudyMinToday(min){ try{ localStorage.setItem(studyKey(), studyMinToday()+(min||0)); }catch(e){} }
+
+async function genPlan(){
+  const h=Math.max(1,Math.min(8, +document.getElementById('planHours').value||3));
+  const target=+document.getElementById('planTarget').value||90;
   const level=document.getElementById('planLevel').value;
-  const tasks=[['📚 درس: أساسيات الجبر','🗂️ حل 10 أسئلة تجميعات','📝 اختبار قصير (10 أسئلة)'],
-               ['🔭 درس: قوانين نيوتن','🗂️ تجميعات فيزياء','🔁 مراجعة أخطاء الأمس'],
-               ['⚗️ درس: التفاعلات','🗂️ تجميعات كيمياء','📝 اختبار محاكي مادة'],
-               ['🧬 درس: الخلية','🗂️ تجميعات أحياء','🎯 اختبار شامل قصير']];
-  let days='';
-  for(let d=1;d<=4;d++){
-    const t=tasks[d-1];
-    days+=`<div class="day-plan"><div class="day-num">يوم ${d}</div><div style="flex:1">
-      <h4 style="font-weight:800;margin-bottom:8px">اليوم ${d} · ${h} ساعات</h4>
-      ${t.map(x=>`<div class="task-check" onclick="this.classList.toggle('done')"><div class="box"></div><span>${x}</span></div>`).join('')}
-    </div></div>`;
+  const dateVal=document.getElementById('planDate').value;
+  let daysCount=7;
+  if(dateVal){ const diff=Math.ceil((new Date(dateVal)-new Date(planToday()))/86400000); if(diff>0)daysCount=Math.min(30,diff); }
+  const perDay=Math.max(1,Math.min(4,h));
+  let foundation=[],collections=[];
+  try{ foundation=await API('/lessons?section='+encodeURIComponent('تأسيس')); }catch(e){}
+  try{ collections=await API('/lessons?section='+encodeURIComponent('تجميعات')); }catch(e){}
+  const queue=[...foundation.map(l=>({l,sec:'تأسيس',emo:'📚'})), ...collections.map(l=>({l,sec:'تجميعات',emo:'🗂️'}))];
+  let qi=0; const days=[]; const start=new Date(planToday());
+  for(let d=0;d<daysCount;d++){
+    const date=new Date(start.getTime()+d*86400000).toISOString().slice(0,10);
+    const tasks=[];
+    for(let k=0;k<perDay && qi<queue.length;k++){ const it=queue[qi++]; tasks.push({id:'d'+d+'t'+tasks.length,label:`${it.emo} ${it.l.title}`,type:'lesson',lessonId:it.l.id,done:false}); }
+    tasks.push({id:'d'+d+'t'+tasks.length,label:'🗂️ حل تجميعات (10 أسئلة)',type:'collection',done:false});
+    tasks.push({id:'d'+d+'t'+tasks.length,label:(d%2? '📝 اختبار محاكي قصير':'🔁 مراجعة أخطاء الأمس'),type:(d%2?'exam':'review'),done:false});
+    days.push({date,tasks});
   }
-  document.getElementById('planResult').style.display='block';
-  document.getElementById('planResult').style.placeItems='unset';
-  document.getElementById('planResult').innerHTML=`
-    <div style="animation:pop .4s">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px">
-        <div><h3 style="font-family:Cairo;font-size:20px;font-weight:900">✨ خطتك الذكية جاهزة</h3><p style="font-size:13px;color:var(--text-2)">مستوى: ${level} · الهدف: ${target}% · ${h} ساعات يومياً</p></div>
-        <span class="tag tag-easy">تم التوليد بالذكاء الاصطناعي</span>
-      </div>
-      <div class="card" style="padding:16px;background:var(--card-2);margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="font-weight:700">احتمالية بلوغ الهدف</span><span style="color:var(--gold);font-weight:800">87%</span></div>
-        <div class="progress"><span style="width:87%"></span></div>
-        <p style="font-size:12px;color:var(--text-3);margin-top:8px">بناءً على وقتك ومستواك، أنت على المسار الصحيح للوصول لدرجة ${target}%.</p>
-      </div>
-      ${days}
-    </div>`;
-  document.getElementById('planResult').scrollIntoView({behavior:'smooth',block:'nearest'});
+  const plan={createdAt:planToday(),examDate:dateVal||'',hoursPerDay:h,level,target,days};
+  savePlan(plan); await renderPlanResult(); renderHomePlan(); adminToast('تم إنشاء خطتك الذكية ✅');
+}
+function planTaskRow(t,dayIdx,idx,prog){
+  const done = t.type==='lesson' ? prog.has(t.lessonId) : !!t.done;
+  const click = t.type==='lesson' ? `togglePlanLesson(${t.lessonId})` : `togglePlanTask(${dayIdx},${idx})`;
+  return `<div class="task-check ${done?'done':''}" onclick="${click}"><div class="box">${done?'✓':''}</div><span>${t.label}</span></div>`;
+}
+async function togglePlanTask(dayIdx,idx){ const p=loadPlan(); if(!p)return; const t=p.days[dayIdx].tasks[idx]; t.done=!t.done; savePlan(p); renderHomePlan(); if(document.getElementById('page-plan').classList.contains('active'))renderPlanResult(); }
+async function togglePlanLesson(id){ try{ await API('/progress',{method:'POST',body:JSON.stringify({lesson_id:id})}); }catch(e){} renderHomePlan(); loadHomeStats(); if(document.getElementById('page-plan').classList.contains('active'))renderPlanResult(); }
+async function renderPlanResult(){
+  const box=document.getElementById('planResult'); if(!box)return;
+  const plan=loadPlan();
+  if(!plan){ box.style.display='grid'; box.style.placeItems='center'; box.innerHTML='<div><div style="font-size:54px;margin-bottom:10px">🗺️</div><p>أدخل معطياتك واضغط «أنشئ خطتي» لعرض جدول المذاكرة الذكي الخاص بك</p></div>'; return; }
+  const prog=await getProgressSet();
+  let total=0,done=0; plan.days.forEach(d=>d.tasks.forEach(t=>{ total++; if(t.type==='lesson'?prog.has(t.lessonId):t.done)done++; }));
+  const pct=total?Math.round(done*100/total):0;
+  box.style.display='block'; box.style.placeItems='unset';
+  const daysHtml=plan.days.map((d,di)=>`<div class="day-plan"><div class="day-num">يوم ${di+1}</div><div style="flex:1">
+    <h4 style="font-weight:800;margin-bottom:8px">${d.date}${d.date===planToday()?' · اليوم':''}</h4>
+    ${d.tasks.map((t,ti)=>planTaskRow(t,di,ti,prog)).join('')}</div></div>`).join('');
+  box.innerHTML=`<div style="animation:pop .4s">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <div><h3 style="font-family:Cairo;font-size:20px;font-weight:900">✨ خطتك الذكية</h3><p style="font-size:13px;color:var(--text-2)">مستوى: ${plan.level} · الهدف: ${plan.target}% · ${plan.hoursPerDay} ساعات يومياً${plan.examDate?` · الاختبار ${plan.examDate}`:''}</p></div>
+      <span class="tag tag-easy">${plan.days.length} يوم</span></div>
+    <div class="card" style="padding:16px;background:var(--card-2);margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="font-weight:700">نسبة إنجاز الخطة</span><span style="color:var(--gold);font-weight:800">${pct}%</span></div>
+      <div class="progress"><span style="width:${pct}%"></span></div>
+      <p style="font-size:12px;color:var(--text-3);margin-top:8px">أنجزت ${done} من ${total} مهمة · باقٍ ${total-done}. أكمل دروسك وستُعلَّم تلقائياً هنا.</p></div>
+    ${daysHtml}
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:6px;color:#ef4444" onclick="if(confirm('حذف الخطة الحالية؟')){localStorage.removeItem(planKey());renderPlanResult();renderHomePlan();}">🗑️ حذف الخطة</button>
+  </div>`;
+}
+async function renderHomePlan(){
+  const box=document.getElementById('homePlan'); if(!box)return;
+  const plan=loadPlan();
+  if(!plan){ box.innerHTML=`<div class="card" style="padding:24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+    <div><span class="eyebrow">✨ الخطة الذكية</span><h3 style="font-family:Cairo;font-size:18px;font-weight:800">ما عندك خطة مذاكرة بعد</h3><p style="font-size:13px;color:var(--text-2);margin-top:4px">أنشئ خطتك وبتتابع تقدّمك يوم بيوم هنا تلقائياً.</p></div>
+    <button class="btn btn-gold" onclick="document.querySelector('[data-page=plan]').click()">✨ أنشئ خطتي الآن</button></div>`; return; }
+  const prog=await getProgressSet();
+  let total=0,done=0; plan.days.forEach(d=>d.tasks.forEach(t=>{ total++; if(t.type==='lesson'?prog.has(t.lessonId):t.done)done++; }));
+  const pct=total?Math.round(done*100/total):0;
+  let di=plan.days.findIndex(d=>d.date===planToday());
+  if(di<0) di=plan.days.findIndex(d=>d.tasks.some(t=>!(t.type==='lesson'?prog.has(t.lessonId):t.done)));
+  if(di<0) di=plan.days.length-1;
+  const day=plan.days[di];
+  const dayDone=day.tasks.every(t=>t.type==='lesson'?prog.has(t.lessonId):t.done);
+  const rows=day.tasks.map((t,ti)=>planTaskRow(t,di,ti,prog)).join('');
+  box.innerHTML=`<div class="card" style="padding:26px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <div><span class="eyebrow">✨ خطتك الذكية</span><h3 style="font-family:Cairo;font-size:20px;font-weight:900">مهامك اليوم — اليوم ${di+1} من ${plan.days.length}</h3></div>
+      <div style="text-align:center"><div style="font-family:Cairo;font-size:28px;font-weight:900;color:var(--gold)">${pct}%</div><div style="font-size:12px;color:var(--text-2)">من الخطة</div></div></div>
+    <div class="progress" style="margin-bottom:6px"><span style="width:${pct}%"></span></div>
+    <p style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">أنجزت ${done} من ${total} مهمة · باقٍ ${total-done}${plan.examDate?` · الاختبار ${plan.examDate}`:''}</p>
+    ${dayDone?`<div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#10b981;border-radius:14px;padding:14px;text-align:center;font-weight:800;margin-bottom:14px">🎉 أحسنت! أنهيت مذاكرة اليوم</div>`:''}
+    <div style="display:grid;gap:8px">${rows}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+      <span class="tag" style="background:var(--gold-soft);color:var(--gold)">⏱ وقت اليوم على المنصة: ${studyMinToday()} دقيقة</span>
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px" onclick="togglePomo()">▶ مؤقّت المذاكرة</button>
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;margin-inline-start:auto" onclick="document.querySelector('[data-page=plan]').click()">الخطة كاملة</button>
+    </div></div>`;
 }
 
 /* ============ ADMIN ============ */
@@ -1535,8 +1598,9 @@ function renderCharts(page){
   const mk=(id,cfg)=>{const el=document.getElementById(id);if(!el)return;if(charts[id])charts[id].destroy();charts[id]=new Chart(el,cfg);};
   const days=['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
   if(page==='home'){
-    loadHomeChart();
+    loadHomeChart(); renderHomePlan();
   }
+  if(page==='plan') renderPlanResult();
   if(page==='dashboard') loadDashboardCharts();
   // ملاحظة: رسوم لوحة الإدارة تُبنى ببيانات حقيقية داخل loadStats()
 }
@@ -2726,7 +2790,7 @@ function startPomo(){
   pomoTimer=setInterval(()=>{
     pomoLeft--; updatePomoUI();
     if(pomoLeft<=0){ clearInterval(pomoTimer); pomoRunning=false; const done=Math.round(pomoTotal/60);
-      saveStudy(done); notify('انتهت جلسة المذاكرة! 🎉', `أحسنت! سجّلنا لك ${done} دقيقة دراسة.`);
+      saveStudy(done); triggerStudyAlarm(done);
       pomoLeft=pomoTotal; updatePomoUI(); }
   },1000);
 }
@@ -2735,7 +2799,25 @@ function finishPomo(){ // حفظ الوقت المنقضي وإيقاف
   clearInterval(pomoTimer); const spent=Math.round((pomoTotal-pomoLeft)/60); pomoRunning=false; pomoLeft=pomoTotal; updatePomoUI();
   if(spent>0){ saveStudy(spent); adminToast(`سجّلنا ${spent} دقيقة دراسة 💪`); } else adminToast('لم تبدأ بعد');
 }
-async function saveStudy(minutes){ try{ await API('/study',{method:'POST',body:JSON.stringify({minutes})}); refreshUserUI(); }catch(e){} }
+async function saveStudy(minutes){ addStudyMinToday(minutes); try{ await API('/study',{method:'POST',body:JSON.stringify({minutes})}); refreshUserUI(); }catch(e){} renderHomePlan(); }
+/* منبّه نهاية وقت المذاكرة — شاشة كاملة + صوت + اهتزاز، تُغلق بأي ضغطة */
+function triggerStudyAlarm(min){
+  let actx,beepTimer;
+  try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  function beep(){ if(!actx)return; const o=actx.createOscillator(),g=actx.createGain(); o.connect(g); g.connect(actx.destination); o.type='sine'; o.frequency.value=880; g.gain.setValueAtTime(.0001,actx.currentTime); g.gain.exponentialRampToValueAtTime(.35,actx.currentTime+.05); g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.45); o.start(); o.stop(actx.currentTime+.5); }
+  beep(); beepTimer=setInterval(beep,850);
+  try{ if(navigator.vibrate)navigator.vibrate([300,150,300,150,300]); }catch(e){}
+  const ov=document.createElement('div'); ov.id='studyAlarm';
+  ov.style.cssText='position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(5,8,20,.93);backdrop-filter:blur(8px);text-align:center;animation:fade .3s;cursor:pointer;padding:20px';
+  ov.innerHTML=`<div><div style="font-size:84px;animation:floaty 1.2s ease-in-out infinite">⏰</div>
+    <h2 style="font-family:Cairo;font-size:30px;font-weight:900;color:#fff;margin:14px 0 6px">انتهى وقت المذاكرة!</h2>
+    <p style="color:#cbd5e1;font-size:16px;margin-bottom:10px">أحسنت — سجّلنا لك ${min} دقيقة دراسة 💪</p>
+    <p style="color:#94a3b8;font-size:13px">اضغط في أي مكان لإغلاق التنبيه</p></div>`;
+  function close(){ clearInterval(beepTimer); try{actx&&actx.close();}catch(e){} ov.remove(); document.removeEventListener('keydown',close); }
+  ov.addEventListener('click',close); document.addEventListener('keydown',close);
+  document.body.appendChild(ov);
+  try{ notify('انتهى وقت المذاكرة! 🎉', `سجّلنا لك ${min} دقيقة دراسة.`); }catch(e){}
+}
 
 /* ---------- الإشعارات ---------- */
 function notify(title, bodyTxt){
