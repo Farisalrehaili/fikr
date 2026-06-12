@@ -763,7 +763,6 @@ table.tbl tr:hover td{background:var(--card-2)}
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="logo">ف</div>
       <div>
         <h1>منصة <span>فِكر</span></h1>
         <p>منصتك التعليمية الذكية</p>
@@ -1667,8 +1666,7 @@ function buildAuth(){
    <div style="position:absolute;inset:0;z-index:-1;background:radial-gradient(700px 400px at 80% 0,rgba(109,40,217,.18),transparent),radial-gradient(600px 360px at 10% 100%,rgba(212,175,55,.12),transparent)"></div>
    <div class="card" style="max-width:420px;width:100%;padding:34px;animation:pop .4s">
      <div style="text-align:center;margin-bottom:22px">
-       <div style="width:60px;height:60px;border-radius:18px;background:var(--grad);display:grid;place-items:center;font-weight:900;font-size:28px;color:#fff;margin:0 auto 12px">ف</div>
-       <h2 style="font-family:Cairo;font-size:24px;font-weight:900">منصة <span style="background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent">فِكر</span></h2>
+       <h2 style="font-family:Cairo;font-size:30px;font-weight:900;margin-bottom:4px">منصة <span style="background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent">فِكر</span></h2>
        <p style="font-size:13px;color:var(--text-2)" id="authSub">سجّل دخولك للمتابعة</p>
      </div>
      <div id="authErr" style="display:none;background:rgba(239,68,68,.12);color:#ef4444;padding:10px 14px;border-radius:11px;font-size:13px;margin-bottom:14px;text-align:center"></div>
@@ -2990,7 +2988,7 @@ async function renderParentView(code){
   let d; try{ d=await API('/parent/'+code); }catch(e){ document.body.innerHTML='<div style="display:grid;place-items:center;height:100vh;font-family:Tajawal;color:#888">رمز غير صحيح أو منتهي</div>'; return; }
   const ov=document.createElement('div'); ov.style.cssText='position:fixed;inset:0;z-index:600;overflow:auto;background:var(--bg);padding:24px';
   ov.innerHTML=`<div style="max-width:760px;margin:0 auto">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><div style="width:46px;height:46px;border-radius:14px;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:900;font-size:22px">ف</div><div><h2 style="font-family:Cairo;font-size:22px;font-weight:900">تقرير الطالب: ${d.name}</h2><p style="font-size:13px;color:var(--text-2)">منصة فِكر التعليمية — عرض لولي الأمر</p></div></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><div><h2 style="font-family:Cairo;font-size:22px;font-weight:900">تقرير الطالب: ${d.name}</h2><p style="font-size:13px;color:var(--text-2)">منصة فِكر التعليمية — عرض لولي الأمر</p></div></div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px">
       <div class="card stat"><div class="num">${d.level}</div><div class="lbl">المستوى</div></div>
       <div class="card stat"><div class="num">${d.examsCount}</div><div class="lbl">اختبار منجز</div></div>
