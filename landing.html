@@ -191,8 +191,8 @@ footer .brand{justify-content:center;margin-bottom:14px}
 <!-- HERO -->
 <header class="hero wrap">
   <span class="eyebrow">🚀 منصتك الأولى لاختبار التحصيلي</span>
-  <h1>طريقك نحو <span class="g">الدرجة الكاملة</span><br>في التحصيلي يبدأ من هنا</h1>
-  <p class="sub">تأسيس متكامل، أحدث التجميعات، بنك أسئلة ضخم، اختبارات محاكية للواقع، وخطة مذاكرة ذكية تتابع تقدّمك يوماً بيوم — كل ما تحتاجه في مكان واحد.</p>
+  <h1 id="lpHeroTitle">طريقك نحو <span class="g">الدرجة الكاملة</span><br>في التحصيلي يبدأ من هنا</h1>
+  <p class="sub" id="lpHeroSub">تأسيس متكامل، أحدث التجميعات، بنك أسئلة ضخم، اختبارات محاكية للواقع، وخطة مذاكرة ذكية تتابع تقدّمك يوماً بيوم — كل ما تحتاجه في مكان واحد.</p>
   <div class="hero-cta">
     <a class="btn btn-gold btn-lg" href="https://farisalrehaili.github.io/fikr/?start=trial">🎁 ابدأ تجربتك المجانية ٣ أيام</a>
     <a class="btn btn-ghost btn-lg" href="#pricing">شوف الباقة</a>
@@ -272,7 +272,7 @@ footer .brand{justify-content:center;margin-bottom:14px}
     <div class="card price pop">
       <span class="tag-pop">الأكثر طلباً 🔥</span>
       <h3>اشتراك التحصيلي الكامل</h3>
-      <div class="amt">149<small> ر.س</small></div>
+      <div class="amt"><span id="lpPrice">149</span><small> ر.س</small></div>
       <div class="per">دفعة واحدة · تكفيك <b style="color:var(--gold)">طوال فترة التحصيلي</b></div>
       <ul>
         <li>وصول كامل لكل المواد الأربع</li>
@@ -335,6 +335,16 @@ footer .brand{justify-content:center;margin-bottom:14px}
 
 <script>
   document.getElementById('yr').textContent=new Date().getFullYear();
+  // ===== تطبيق محتوى المدير المحفوظ (نفس الأصل = localStorage مشترك مع المنصة) =====
+  (function(){
+    let s={}; try{ s=JSON.parse(localStorage.getItem('fikr_site')||'{}'); }catch(e){}
+    const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    function brandHTML(name){ const w=(name||'').trim().split(/\s+/); if(w.length<2) return '<b>'+esc(name)+'</b>'; const last=w.pop(); return '<b>'+esc(w.join(' '))+' <span>'+esc(last)+'</span></b>'; }
+    if(s.brandName){ document.querySelectorAll('a.brand').forEach(a=>a.innerHTML=brandHTML(s.brandName)); document.title=s.brandName+(s.brandSub?(' | '+s.brandSub):''); }
+    if(s.heroTitle){ const h=document.getElementById('lpHeroTitle'); if(h)h.textContent=s.heroTitle; }
+    if(s.heroSub){ const p=document.getElementById('lpHeroSub'); if(p)p.textContent=s.heroSub; }
+    if(s.price){ const pr=document.getElementById('lpPrice'); if(pr)pr.textContent=s.price; document.querySelectorAll('[data-plan]').forEach(b=>{ b.dataset.price=s.price; if(/149/.test(b.textContent))b.textContent=b.textContent.replace(/149/,s.price); }); }
+  })();
   // ===== الاشتراك (بدون بوابة دفع — تُربط لاحقاً) =====
   // 👈 لربط بوابة الدفع لاحقاً: استبدل محتوى هذه الدالة بتحويل المستخدم لرابط الدفع
   //    مثال: location.href = 'https://your-payment-link?plan='+plan+'&amount='+price;

@@ -564,11 +564,12 @@ table.tbl tr:hover td{background:var(--card-2)}
       return J({token:t,user:{id:usr.id,name:usr.name,email:usr.email,role:usr.role,xp:usr.xp,streak,level:levelOf(usr.xp),trial_start:usr.trial_start||'',subscribed:usr.subscribed||0}});
     }
     if(method==='POST'&&path==='/register'){
-      let {name,email,password}=body; email=(email||'').trim().toLowerCase(); name=(name||'').trim();
+      let {name,email,password,phone}=body; email=(email||'').trim().toLowerCase(); name=(name||'').trim(); phone=(phone||'').trim();
       if(!name||!email||!password) return err('كل الحقول مطلوبة');
+      if(!phone) return err('رقم الجوال مطلوب');
       if(DB.users.some(x=>x.email===email)) return err('البريد مسجّل مسبقاً');
       const id=DB.seqs.users+1; DB.seqs.users=id;
-      DB.users.push({id,name,email,password,role:'student',xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone:'',country:'السعودية',last_login:'',trial_start:dayStr(),subscribed:0,created_at:now()});
+      DB.users.push({id,name,email,password,role:'student',xp:0,streak:0,active:1,subject:'',study_minutes:0,goal:0,streak_freezes:0,theme:'',parent_code:'',city:'',school:'',region:'',phone,country:'السعودية',last_login:'',trial_start:dayStr(),subscribed:0,created_at:now()});
       const t=tok(); DB.sessions[t]=id; persist();
       return J({token:t,user:{id,name,email,role:'student',xp:0,streak:0,trial_start:dayStr(),subscribed:0}});
     }
@@ -1152,6 +1153,7 @@ table.tbl tr:hover td{background:var(--card-2)}
           <div class="tab" onclick="adminTab(this,'teachers')">المعلّمون</div>
           <div class="tab" onclick="adminTab(this,'customers')">👥 العملاء</div>
           <div class="tab" onclick="adminTab(this,'reports')">البلاغات</div>
+          <div class="tab" onclick="adminTab(this,'content')">🎨 محتوى الموقع</div>
         </div>
 
         <div id="admin-overview" class="admin-pane">
@@ -1227,6 +1229,31 @@ table.tbl tr:hover td{background:var(--card-2)}
           <div class="card" style="padding:22px">
             <h3 style="font-family:Cairo;font-size:17px;font-weight:800;margin-bottom:16px">🚩 بلاغات الطلاب عن الأسئلة</h3>
             <div id="reportsList"></div>
+          </div>
+        </div>
+
+        <div id="admin-content" class="admin-pane" style="display:none">
+          <div class="card" style="padding:26px;max-width:760px">
+            <h3 style="font-family:Cairo;font-size:18px;font-weight:800;margin-bottom:4px">🎨 محرّر محتوى الموقع</h3>
+            <p style="font-size:13.5px;color:var(--text-2);margin-bottom:8px">عدّل نصوص المنصة وصفحة الهبوط من هنا — يتغيّر فورًا.</p>
+            <div class="nq-hint" style="margin-bottom:18px">💡 التعديلات تُحفظ على جهازك وتظهر لك مباشرة. لتظهر لكل الزوار على الإنترنت يلزم ربط قاعدة بيانات سحابية (أخبرني وأجهّزها).</div>
+            <div class="nq-sec"><div class="nq-sec-t">هوية المنصة</div>
+              <div class="field"><label>اسم المنصة</label><input id="siteBrand" placeholder="منصة فِكر"></div>
+              <div class="field" style="margin-bottom:0"><label>الوصف تحت الاسم</label><input id="siteSub" placeholder="منصتك التعليمية الذكية"></div>
+            </div>
+            <div class="nq-sec"><div class="nq-sec-t">صفحة الهبوط (التسويق)</div>
+              <div class="field"><label>العنوان الرئيسي</label><textarea id="siteHeroTitle" rows="2" style="width:100%;padding:12px 14px;border-radius:13px;border:1px solid var(--border);background:var(--card-2);color:var(--text);font-family:inherit;resize:vertical"></textarea></div>
+              <div class="field"><label>الوصف</label><textarea id="siteHeroSub" rows="3" style="width:100%;padding:12px 14px;border-radius:13px;border:1px solid var(--border);background:var(--card-2);color:var(--text);font-family:inherit;resize:vertical"></textarea></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="field" style="margin-bottom:0"><label>السعر (ر.س)</label><input id="sitePrice" inputmode="numeric" placeholder="149"></div>
+                <div class="field" style="margin-bottom:0"><label>أيام التجربة المجانية</label><input id="siteTrial" inputmode="numeric" placeholder="3"></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="saveSite()">💾 حفظ التغييرات</button>
+              <button class="btn btn-ghost" onclick="resetSite()">↺ استعادة الافتراضي</button>
+              <a class="btn btn-ghost" href="landing.html" target="_blank" style="margin-inline-start:auto">👁️ معاينة صفحة الهبوط</a>
+            </div>
           </div>
         </div>
 
@@ -1681,12 +1708,12 @@ function buildAuth(){
    <div style="position:absolute;inset:0;z-index:-1;background:radial-gradient(700px 400px at 80% 0,rgba(109,40,217,.18),transparent),radial-gradient(600px 360px at 10% 100%,rgba(212,175,55,.12),transparent)"></div>
    <div class="card" style="max-width:420px;width:100%;padding:34px;animation:pop .4s">
      <div style="text-align:center;margin-bottom:22px">
-       <h2 style="font-family:Cairo;font-size:30px;font-weight:900;margin-bottom:4px">منصة <span style="background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent">فِكر</span></h2>
+       <h2 id="authBrand" style="font-family:Cairo;font-size:30px;font-weight:900;margin-bottom:4px">منصة <span style="background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent">فِكر</span></h2>
        <p style="font-size:13px;color:var(--text-2)" id="authSub">سجّل دخولك للمتابعة</p>
      </div>
      <div id="authErr" style="display:none;background:rgba(239,68,68,.12);color:#ef4444;padding:10px 14px;border-radius:11px;font-size:13px;margin-bottom:14px;text-align:center"></div>
      <div class="field" id="nameField" style="display:none"><label>الاسم</label><input id="auName" placeholder="اسمك الكامل" onkeydown="if(event.key==='Enter')doAuth()"></div>
-     <div class="field" id="codeField" style="display:none"><label>كود التفعيل</label><input id="auCode" placeholder="FIKR-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')doAuth()"></div>
+     <div class="field" id="phoneField" style="display:none"><label>رقم الجوال</label><input id="auPhone" type="tel" inputmode="numeric" placeholder="05XXXXXXXX" autocapitalize="none" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')doAuth()"></div>
      <div class="field"><label>البريد الإلكتروني</label><input id="auEmail" type="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@email.com" onkeydown="if(event.key==='Enter')doAuth()"></div>
      <div class="field"><label>كلمة المرور</label><input id="auPass" type="password" placeholder="••••••" onkeydown="if(event.key==='Enter')doAuth()"></div>
      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="doAuth()" id="auBtn">تسجيل الدخول</button>
@@ -1700,13 +1727,14 @@ function buildAuth(){
    </div>`;
   document.body.appendChild(el);
   document.body.style.overflow='hidden';
+  applySiteContent();
 }
 let authMode='login';
 function toggleAuthMode(){
   authMode = authMode==='login'?'register':'login';
   const reg = authMode==='register';
   document.getElementById('nameField').style.display = reg?'block':'none';
-  document.getElementById('codeField').style.display = reg?'block':'none';
+  document.getElementById('phoneField').style.display = reg?'block':'none';
   document.getElementById('auBtn').textContent = reg?'إنشاء حساب':'تسجيل الدخول';
   document.getElementById('authSub').textContent = reg?'أنشئ حسابك الجديد':'سجّل دخولك للمتابعة';
   document.getElementById('authToggleTxt').textContent = reg?'لديك حساب؟':'ليس لديك حساب؟';
@@ -1719,8 +1747,9 @@ async function doAuth(){
   const password=document.getElementById('auPass').value.trim();
   const name=document.getElementById('auName').value.trim();
   try{
-    const code = (document.getElementById('auCode')?.value||'').trim();
-    const body = authMode==='register'?{name,email,password,code}:{email,password};
+    const phone = (document.getElementById('auPhone')?.value||'').trim();
+    if(authMode==='register' && !phone){ err.textContent='أدخل رقم جوالك'; err.style.display='block'; return; }
+    const body = authMode==='register'?{name,email,password,phone}:{email,password};
     const d = await API('/'+authMode,{method:'POST',body:JSON.stringify(body)});
     TOKEN=d.token; localStorage.setItem('th_token',TOKEN); ME=d.user;
     enterApp();
@@ -1734,6 +1763,7 @@ function enterApp(){
   document.body.style.overflow='';
   document.querySelector('.wrap').style.display='flex';
   document.querySelector('.fab-toggle').style.display='grid';
+  applySiteContent();
   // اسم المستخدم
   document.querySelectorAll('.avatar').forEach(av=>av.textContent=ME.name.trim()[0]);
   // إخفاء لوحة الإدارة لغير المدير
@@ -2614,8 +2644,37 @@ adminTab = function(el,which){
   if(which==='teachers'){ loadTeachers(); loadActivity(); }
   if(which==='reports') loadReports();
   if(which==='customers') loadCustomers();
+  if(which==='content') loadSiteEditor();
   if(which==='overview') loadStats();
 };
+/* ===== محرّر محتوى الموقع (مشترك بين المنصة وصفحة الهبوط عبر localStorage) ===== */
+const SITE_DEFAULTS={ brandName:'منصة فِكر', brandSub:'منصتك التعليمية الذكية',
+  heroTitle:'طريقك نحو الدرجة الكاملة في التحصيلي يبدأ من هنا',
+  heroSub:'تأسيس متكامل، أحدث التجميعات، بنك أسئلة ضخم، اختبارات محاكية للواقع، وخطة مذاكرة ذكية تتابع تقدّمك يوماً بيوم — كل ما تحتاجه في مكان واحد.',
+  price:'149', trialDays:'3' };
+function getSite(){ try{ return Object.assign({},SITE_DEFAULTS,JSON.parse(localStorage.getItem('fikr_site')||'{}')); }catch(e){ return {...SITE_DEFAULTS}; } }
+function setSite(o){ try{ localStorage.setItem('fikr_site',JSON.stringify(o)); }catch(e){} }
+function siteEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function brandHTML(name){ const w=(name||'').trim().split(/\s+/); if(w.length<2) return '<span>'+siteEsc(name)+'</span>'; const last=w.pop(); return siteEsc(w.join(' '))+' <span>'+siteEsc(last)+'</span>'; }
+function applySiteContent(){
+  const s=getSite();
+  document.title=s.brandName+' | '+s.brandSub;
+  const h1=document.querySelector('.brand h1'); if(h1) h1.innerHTML=brandHTML(s.brandName);
+  const p=document.querySelector('.brand p'); if(p) p.textContent=s.brandSub;
+  const ab=document.getElementById('authBrand'); if(ab){ const w=(s.brandName||'').trim().split(/\s+/); const last=w.length>1?w.pop():''; ab.innerHTML=(w.length?siteEsc(w.join(' '))+' ':'')+'<span style="background:var(--grad-gold);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">'+siteEsc(last||s.brandName)+'</span>'; }
+}
+function loadSiteEditor(){
+  const s=getSite(); const v=(id,val)=>{const e=document.getElementById(id); if(e)e.value=val;};
+  v('siteBrand',s.brandName); v('siteSub',s.brandSub); v('siteHeroTitle',s.heroTitle); v('siteHeroSub',s.heroSub); v('sitePrice',s.price); v('siteTrial',s.trialDays);
+}
+function saveSite(){
+  const g=id=>(document.getElementById(id)?.value||'').trim();
+  const o={ brandName:g('siteBrand')||SITE_DEFAULTS.brandName, brandSub:g('siteSub')||SITE_DEFAULTS.brandSub,
+    heroTitle:g('siteHeroTitle')||SITE_DEFAULTS.heroTitle, heroSub:g('siteHeroSub')||SITE_DEFAULTS.heroSub,
+    price:g('sitePrice')||SITE_DEFAULTS.price, trialDays:g('siteTrial')||SITE_DEFAULTS.trialDays };
+  setSite(o); applySiteContent(); adminToast('تم حفظ المحتوى ✅ — افتح صفحة الهبوط لرؤية التغيير');
+}
+function resetSite(){ try{ localStorage.removeItem('fikr_site'); }catch(e){} applySiteContent(); loadSiteEditor(); adminToast('تمت الاستعادة ↺'); }
 let CUSTOMERS=[];
 async function loadCustomers(){
   try{ CUSTOMERS=await API('/customers'); }catch(e){ CUSTOMERS=[]; }
